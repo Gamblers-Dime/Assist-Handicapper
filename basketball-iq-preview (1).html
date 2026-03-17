@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=390, maximum-scale=1">
+<title>Basketball-IQ · CourtIQ Android Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── PALETTE (light tan + blue) ────────────────── */
+  :root {
+    --tan:       #F2E8D5; --tan-l: #FAF5EC; --tan-m: #E8D9C0; --tan-d: #D4C4A8;
+    --blue:      #1B6CA8; --blue-l:#4A90C4; --blue-p:#D6E9F8; --blue-dk:#0F4A7A;
+    --text:      #1A1208; --text2: #5A4A32; --text3: #8A7460;
+    --win:       #1B8A5A; --loss:  #C0392B;
+    --border:    #DDD0B8; --surface:#FAF5EC;
+    --gold:      #C8960C;
+  }
+
+  body { background: #E8E0CE; font-family: Georgia, serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 24px 12px; }
+
+  /* Phone shell */
+  .phone { width: 390px; background: var(--tan); border-radius: 44px; overflow: hidden;
+           box-shadow: 0 32px 80px rgba(0,0,0,0.28), 0 0 0 12px #2a1a0a, 0 0 0 14px #1a0e05;
+           min-height: 840px; display: flex; flex-direction: column; }
+
+  /* Status bar */
+  .status { background: var(--blue-dk); padding: 12px 24px 8px; display: flex; justify-content: space-between; align-items: center; }
+  .status-time { color: #fff; font-size: 15px; font-weight: 700; }
+  .status-icons { color: #fff; font-size: 12px; letter-spacing: 1px; }
+
+  /* Header */
+  .header { background: var(--blue-dk); padding: 10px 18px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #0a3a5a; }
+  .header-title { color: #fff; font-size: 16px; font-weight: 700; }
+  .header-sub { color: #8ab8d8; font-size: 10px; letter-spacing: 1px; margin-top: 1px; }
+  .header-badge { background: var(--blue); border-radius: 6px; padding: 4px 10px; color: #fff; font-size: 10px; font-weight: 700; }
+
+  /* Summary bar */
+  .summary { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .sum-item { flex: 1; padding: 10px 8px; text-align: center; border-right: 1px solid var(--border); }
+  .sum-item:last-child { border-right: none; }
+  .sum-val { font-size: 17px; font-weight: 700; color: var(--text); font-family: Georgia; }
+  .sum-val.blue { color: var(--blue); }
+  .sum-val.green { color: var(--win); }
+  .sum-lbl { font-size: 8px; color: var(--text3); letter-spacing: 0.8px; margin-top: 1px; }
+
+  /* Tab bar */
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 12px 0; gap: 4px; }
+  .tab { flex: 1; padding: 7px 4px; border-radius: 8px 8px 0 0; text-align: center; cursor: pointer; font-size: 10px; color: var(--text3); border: 1px solid transparent; transition: all 0.2s; }
+  .tab.active { background: var(--blue); color: #fff; font-weight: 700; border-color: var(--blue); }
+  .tab:hover:not(.active) { background: var(--tan-m); }
+
+  /* Scroll area */
+  .scroll { flex: 1; overflow-y: auto; padding: 14px; background: var(--tan); }
+  .scroll::-webkit-scrollbar { width: 3px; }
+  .scroll::-webkit-scrollbar-thumb { background: var(--tan-d); border-radius: 2px; }
+
+  /* Prop card */
+  .prop-card { background: var(--surface); border-radius: 12px; padding: 13px; margin-bottom: 11px;
+               border: 1px solid var(--border); border-left: 4px solid var(--blue);
+               box-shadow: 0 2px 8px rgba(90,60,20,0.08); }
+  .prop-card.grade-b { border-left-color: #2FAE7A; }
+  .prop-card.loading { border-left-color: var(--tan-d); opacity: 0.7; }
+  .prop-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 9px; }
+  .prop-player { font-size: 14px; font-weight: 700; color: var(--text); }
+  .prop-meta { font-size: 10px; color: var(--text3); margin-top: 2px; }
+  .grade-chip { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+  .grade-a { background: rgba(27,108,168,0.12); color: var(--blue); border: 1px solid rgba(27,108,168,0.3); }
+  .grade-b { background: rgba(47,174,122,0.12); color: #2FAE7A; border: 1px solid rgba(47,174,122,0.3); }
+
+  /* Odds row */
+  .odds-row { display: flex; gap: 7px; margin-bottom: 8px; }
+  .odds-box { flex: 1; background: var(--tan); border: 1px solid var(--tan-d); border-radius: 7px; padding: 7px; text-align: center; }
+  .odds-box.highlight { background: rgba(27,108,168,0.08); border-color: rgba(27,108,168,0.3); }
+  .odds-label { font-size: 7px; letter-spacing: 1px; color: var(--text3); margin-bottom: 2px; font-family: Georgia; }
+  .odds-val { font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; color: var(--text); }
+  .odds-val.blue { color: var(--blue); }
+  .odds-val.green { color: var(--win); }
+
+  /* Confidence */
+  .conf-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .conf-bar { flex: 1; height: 5px; background: var(--tan-m); border-radius: 3px; overflow: hidden; }
+  .conf-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .conf-label { font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700; min-width: 36px; }
+
+  /* Factor chips */
+  .factor-row { display: flex; flex-wrap: wrap; gap: 5px; }
+  .factor-chip { padding: 3px 7px; border-radius: 4px; font-size: 9px; font-weight: 600; }
+  .chip-up { background: rgba(27,108,168,0.1); color: var(--blue); }
+  .chip-dn { background: rgba(192,57,43,0.1); color: var(--loss); }
+
+  /* Backtest section */
+  .bt-headline { background: rgba(27,138,90,0.1); border: 2px solid rgba(27,138,90,0.4); border-radius: 14px; padding: 18px; text-align: center; margin-bottom: 14px; }
+  .bt-big { font-size: 48px; font-weight: 700; color: var(--win); font-family: Georgia; line-height: 1; }
+  .bt-sub { font-size: 11px; color: var(--text2); margin-top: 5px; }
+  .bt-row { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+  .bt-stat { font-size: 11px; font-family: 'Courier New', monospace; color: var(--text2); }
+
+  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .metric-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .metric-lbl { font-size: 8px; letter-spacing: 1.5px; color: var(--text3); font-family: Georgia; margin-bottom: 4px; }
+  .metric-val { font-size: 22px; font-weight: 700; font-family: Georgia; }
+
+  /* Section card */
+  .section-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .section-title { font-size: 8px; letter-spacing: 2px; color: var(--blue); font-weight: 700; font-family: Georgia; margin-bottom: 12px; }
+
+  /* System rows */
+  .sys-row { display: flex; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--tan-m); }
+  .sys-name { flex: 1; font-size: 11px; color: var(--text); font-family: Georgia; }
+  .sys-pct { font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; }
+  .mini-bar { width: 60px; height: 4px; background: var(--tan-m); border-radius: 2px; overflow: hidden; margin-top: 2px; }
+  .mini-fill { height: 100%; border-radius: 2px; }
+
+  /* Year chart */
+  .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 80px; margin: 8px 0; }
+  .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .bar-val { font-size: 7px; font-family: 'Courier New', monospace; color: var(--text3); margin-bottom: 2px; }
+  .bar-body { width: 100%; border-radius: 3px 3px 0 0; min-height: 4px; }
+  .bar-lbl { font-size: 7px; color: var(--text3); margin-top: 3px; }
+
+  /* Bottom nav */
+  .bottom-nav { background: var(--surface); border-top: 1px solid var(--border); display: flex; padding: 8px 0 20px; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px; }
+  .nav-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .nav-icon.active { background: var(--blue-p); }
+  .nav-lbl { font-size: 9px; color: var(--text3); font-family: Georgia; }
+  .nav-lbl.active { color: var(--blue); font-weight: 700; }
+
+  /* Page title above phone */
+  .page-title { text-align: center; margin-bottom: 20px; }
+  .page-title h1 { color: #1a0e05; font-size: 26px; font-weight: 900; letter-spacing: -0.5px; }
+  .page-title p { color: #7a6040; font-size: 13px; margin-top: 4px; }
+
+  /* Algo screen */
+  .factor-row-algo { display: flex; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--tan-m); }
+  .fa-name { flex: 1; }
+  .fa-n { font-size: 11px; color: var(--text); font-family: Georgia; font-weight: 700; }
+  .fa-d { font-size: 9px; color: var(--text3); }
+  .fa-r { font-size: 9px; font-family: 'Courier New', monospace; color: var(--text3); }
+  .fa-w { font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; color: var(--blue); text-align: right; }
+  .w-bar { width: 60px; height: 4px; background: var(--tan-m); border-radius: 2px; overflow: hidden; margin-top: 3px; }
+  .w-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+
+  /* Spinner animation for loading state */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--tan-m); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+  .anim { animation: fadeIn 0.3s ease; }
+
+  /* Matchup card */
+  .matchup-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .mc-teams { font-size: 14px; font-weight: 700; color: var(--text); }
+  .mc-at { color: var(--text3); font-weight: 400; }
+  .mc-pgs { font-size: 10px; color: var(--text2); margin-top: 2px; }
+  .mc-time { font-size: 9px; color: var(--text3); font-family: 'Courier New', monospace; margin-top: 1px; }
+  .ou-box { background: var(--blue-p); border-radius: 7px; padding: 6px 10px; text-align: center; }
+  .ou-l { font-size: 7px; color: var(--blue); letter-spacing: 1px; }
+  .ou-v { font-family: 'Courier New', monospace; font-size: 14px; color: var(--blue); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>🏀 Basketball-IQ</h1>
+  <p>Android App Preview · CourtIQ v3.0 · Light Tan + Blue Theme</p>
+</div>
+
+<div class="phone">
+
+  <!-- Status bar -->
+  <div class="status">
+    <span class="status-time">9:41</span>
+    <span class="status-icons">📶 🔋</span>
+  </div>
+
+  <!-- Dynamic header (changes per tab) -->
+  <div class="header" id="hdr">
+    <div>
+      <div class="header-title">🎯 PG Props — Mar 17</div>
+      <div class="header-sub">DRAFTKINGS LINES · ALGORITHM RANKED</div>
+    </div>
+    <div class="header-badge" id="hdr-badge">6 Props</div>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="summary">
+    <div class="sum-item"><div class="sum-val blue">6</div><div class="sum-lbl">Analyzed</div></div>
+    <div class="sum-item"><div class="sum-val blue">3</div><div class="sum-lbl">Grade A</div></div>
+    <div class="sum-item"><div class="sum-val">70.6%</div><div class="sum-lbl">Win Rate</div></div>
+    <div class="sum-item"><div class="sum-val green">+7.9%</div><div class="sum-lbl">Avg ROI</div></div>
+  </div>
+
+  <!-- Tab content area -->
+  <div class="scroll" id="content"></div>
+
+  <!-- Bottom navigation -->
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="setTab(0)">
+      <div class="nav-icon" id="ni0">🎯</div>
+      <span class="nav-lbl" id="nl0">Props</span>
+    </div>
+    <div class="nav-item" onclick="setTab(1)">
+      <div class="nav-icon" id="ni1">🏀</div>
+      <span class="nav-lbl" id="nl1">Matchups</span>
+    </div>
+    <div class="nav-item" onclick="setTab(2)">
+      <div class="nav-icon" id="ni2">⚙️</div>
+      <span class="nav-lbl" id="nl2">Algorithm</span>
+    </div>
+    <div class="nav-item" onclick="setTab(3)">
+      <div class="nav-icon" id="ni3">📊</div>
+      <span class="nav-lbl" id="nl3">Backtest</span>
+    </div>
+    <div class="nav-item" onclick="setTab(4)">
+      <div class="nav-icon" id="ni4">📖</div>
+      <span class="nav-lbl" id="nl4">History</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const HEADERS = [
+  {t:'🎯 PG Props — Mar 17', s:'DRAFTKINGS LINES · ALGORITHM RANKED', b:'6 Props'},
+  {t:"🏀 Tonight's NBA Slate", s:'MAR 17 2026 · 6 GAMES', b:'6 Games'},
+  {t:'⚙️ Prediction Model', s:'13-FACTOR BAYESIAN REGRESSION', b:'v3.0'},
+  {t:'📊 Historical Performance', s:'2015-2026 · 5,000 SIMULATIONS', b:'88.6%'},
+  {t:'📖 PG Historical Database', s:'1980–2026 · ALL-TIME BENCHMARKS', b:'10 PGs'},
+];
+
+const PROPS = [
+  {player:'Tyrese Haliburton',team:'IND @ NYK',line:9.5,proj:10.2,dir:'OVER',conf:78,odds:-118,edge:'+6.8%',grade:'A',factors:['▲ L5 Trend','▲ Team AST%','▲ Drop Coverage']},
+  {player:'Darius Garland',  team:'CLE @ MIL',line:7.5,proj:8.1,dir:'OVER',conf:74,odds:-115,edge:'+5.3%',grade:'A',factors:['▲ L5 Trend','▲ Away Matchup']},
+  {player:'Jalen Brunson',   team:'IND @ NYK',line:7.5,proj:8.0,dir:'OVER',conf:71,odds:-112,edge:'+4.2%',grade:'A',factors:['▲ Home Boost','▲ Usage']},
+  {player:'LaMelo Ball',     team:'CHA @ MIA',line:8.5,proj:8.8,dir:'OVER',conf:67,odds:-105,edge:'+3.1%',grade:'B',factors:['▲ Pace System','▼ Away Split']},
+  {player:'Cade Cunningham', team:'DET @ WAS',line:3.5,proj:3.2,dir:'UNDER',conf:72,odds:-110,edge:'+4.8%',grade:'A',factors:['▲ Weak Def','▲ TO Control']},
+  {player:'Damian Lillard',  team:'CLE @ MIL',line:6.5,proj:6.9,dir:'OVER',conf:63,odds:-108,edge:'+2.9%',grade:'B',factors:['▼ Switch Def','▲ Home System']},
+];
+
+const MATCHUPS = [
+  {away:'IND',home:'NYK',a_pg:'T. Haliburton',h_pg:'J. Brunson',time:'7:30 PM',ou:226.5,spread:-6.5},
+  {away:'CLE',home:'MIL',a_pg:'D. Garland',h_pg:'D. Lillard',time:'8:00 PM',ou:224.0,spread:-5.5},
+  {away:'CHA',home:'MIA',a_pg:'LaMelo Ball',h_pg:'T. Rozier',time:'7:00 PM',ou:218.5,spread:1.5},
+  {away:'PHX',home:'MIN',a_pg:'D. Booker',h_pg:'M. Conley',time:'8:00 PM',ou:216.0,spread:3.5},
+  {away:'SAS',home:'SAC',a_pg:"De'Aaron Fox",h_pg:'K. Murray',time:'10:00 PM',ou:219.5,spread:-11.5},
+  {away:'PHI',home:'DEN',a_pg:'J. Holiday',h_pg:'J. Murray',time:'10:00 PM',ou:220.0,spread:13.5},
+];
+
+const SYSTEMS = [
+  {sys:'ZONE_23',     pct:94.0,bets:562,color:'#1B6CA8'},
+  {sys:'DROP_COVERAGE',pct:88.4,bets:395,color:'#4A90C4'},
+  {sys:'AGGRESSIVE_HELP',pct:83.0,bets:265,color:'#2FAE7A'},
+  {sys:'HYBRID_ZONE',  pct:82.1,bets:162,color:'#2FAE7A'},
+  {sys:'FUNDAMENTAL',  pct:72.7,bets:11, color:'#D4A017'},
+  {sys:'SWITCH_EVERYTHING',pct:54.0,bets:5,color:'#8A7460'},
+];
+
+const YEARS = [
+  {y:"'15",v:88.6},{y:"'16",v:89.3},{y:"'17",v:89.8},{y:"'18",v:87.9},
+  {y:"'19",v:88.9},{y:"'20",v:91.7},{y:"'21",v:90.0},{y:"'22",v:88.3},
+  {y:"'23",v:86.9},{y:"'24",v:87.8},{y:"'25",v:86.2},
+];
+
+const HISTORY = [
+  {pg:'John Stockton',era:'1985–2003',ast:10.5,elite:8.9,poor:12.3,to:2.1},
+  {pg:'Magic Johnson',era:'1979–1996',ast:11.2,elite:9.4,poor:13.8,to:3.6},
+  {pg:'Steve Nash',   era:'1996–2014',ast:8.5, elite:7.2,poor:10.1,to:2.5},
+  {pg:'Chris Paul',   era:'2005–2024',ast:9.4, elite:7.8,poor:11.3,to:2.2},
+  {pg:'Jason Kidd',   era:'1994–2013',ast:8.7, elite:7.3,poor:10.8,to:3.1},
+  {pg:'Cade Cunningham',era:'2021–now',ast:9.2,elite:7.8,poor:11.0,to:3.6},
+  {pg:'Tyrese Haliburton',era:'2021–now',ast:9.8,elite:8.2,poor:11.4,to:3.2},
+  {pg:'Jalen Brunson',era:'2018–now', ast:8.2, elite:7.1,poor:9.8, to:2.8},
+];
+
+const FACTORS = [
+  {n:'L5 Rolling Trend',d:'Strongest single predictor',r:'r=0.58',w:'22%',wp:88},
+  {n:'Opponent DefRtg', d:'Normalized per 100 poss',   r:'r=0.72',w:'18%',wp:72},
+  {n:'Coach Pace System',d:'Possessions/game weighted', r:'r=0.68',w:'14%',wp:56},
+  {n:'Team AST% Context',d:'PG share of team assists',  r:'r=0.84',w:'13%',wp:52},
+  {n:'PG vs PG Matchup', d:'H2H steal% + style',        r:'r=0.61',w:'11%',wp:44},
+  {n:'Home Court Factor',d:'+0.7 AST amplifier',        r:'r=0.52',w:'9%', wp:36},
+  {n:'PG Usage Rate',    d:'Higher usage = more touches',r:'r=0.63',w:'7%', wp:28},
+  {n:'Recent Minutes',   d:'L5 vs season avg',           r:'r=0.71',w:'6%', wp:24},
+];
+
+let currentTab = 0;
+
+function confColor(c) { return c >= 76 ? '#1B6CA8' : c >= 70 ? '#4A90C4' : '#8A7460'; }
+function dirColor(d) { return d === 'OVER' ? '#1B6CA8' : '#2FAE7A'; }
+
+function renderProps() {
+  return `<div class="anim">`+PROPS.map(p => {
+    const cc = confColor(p.conf), dc = dirColor(p.dir);
+    return `
+    <div class="prop-card ${p.grade==='B'?'grade-b':''}">
+      <div class="prop-head">
+        <div><div class="prop-player">${p.player}</div><div class="prop-meta">${p.team} · Assists O/U · DraftKings</div></div>
+        <span class="grade-chip grade-${p.grade.toLowerCase()}">Grade ${p.grade}</span>
+      </div>
+      <div class="odds-row">
+        <div class="odds-box"><div class="odds-label">LINE</div><div class="odds-val">${p.line}</div></div>
+        <div class="odds-box highlight"><div class="odds-label">MODEL</div><div class="odds-val blue">${p.dir} ${p.proj}</div></div>
+        <div class="odds-box"><div class="odds-label">EDGE</div><div class="odds-val green">${p.edge}</div></div>
+        <div class="odds-box"><div class="odds-label">ODDS</div><div class="odds-val" style="font-size:11px">${p.odds>0?'+'+p.odds:p.odds}</div></div>
+      </div>
+      <div class="conf-row">
+        <div class="conf-bar"><div class="conf-fill" style="width:${p.conf}%;background:${cc}"></div></div>
+        <span class="conf-label" style="color:${cc}">${p.conf}%</span>
+      </div>
+      <div class="factor-row">
+        ${p.factors.map(f=>`<span class="factor-chip ${f.startsWith('▲')?'chip-up':'chip-dn'}">${f}</span>`).join('')}
+      </div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function renderMatchups() {
+  return `<div class="anim">
+  <div class="section-card"><div class="section-title">TONIGHT'S NBA SLATE · SOURCE: DRAFTKINGS</div>`+
+  MATCHUPS.map(m=>`
+    <div class="matchup-card">
+      <div style="flex:1">
+        <div class="mc-teams">${m.away} <span class="mc-at">@</span> ${m.home}</div>
+        <div class="mc-pgs">${m.a_pg} vs ${m.h_pg}</div>
+        <div class="mc-time">${m.time} ET · Spread: ${m.spread>0?'+'+m.spread:m.spread}</div>
+      </div>
+      <div class="ou-box"><div class="ou-l">O/U</div><div class="ou-v">${m.ou}</div></div>
+    </div>`).join('')+`</div></div>`;
+}
+
+function renderAlgorithm() {
+  return `<div class="anim">
+  <div class="section-card">
+    <div class="section-title">MODEL ARCHITECTURE — 13 FACTORS</div>
+    ${FACTORS.map(f=>`
+    <div class="factor-row-algo">
+      <div class="fa-name"><div class="fa-n">${f.n}</div><div class="fa-d">${f.d}</div><div class="fa-r">${f.r}</div></div>
+      <div><div class="fa-w">${f.w}</div><div class="w-bar"><div class="w-fill" style="width:${f.wp}%"></div></div></div>
+    </div>`).join('')}
+  </div>
+  <div class="section-card">
+    <div class="section-title">COVARIANCE MATRIX (1980–2026)</div>
+    ${[['PG AST ↔ Team AST','r = 0.84','#1B6CA8'],['PG AST ↔ Opp DefRtg','r = −0.72','#1B6CA8'],
+       ['PG AST ↔ Coach Pace','r = 0.68','#4A90C4'],['PG TO ↔ Opp Steal%','r = 0.61','#4A90C4'],
+       ['Team AST ↔ OffRtg','r = 0.79','#1B6CA8'],['PG AST ↔ Home Adv','r = 0.52','#8A7460']
+    ].map(([lbl,r,c])=>`
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--tan-m)">
+      <span style="font-size:11px;color:var(--text2)">${lbl}</span>
+      <span style="font-family:'Courier New',monospace;font-size:12px;font-weight:700;color:${c}">${r}</span>
+    </div>`).join('')}
+  </div></div>`;
+}
+
+function renderBacktest() {
+  const maxV = Math.max(...YEARS.map(y=>y.v));
+  return `<div class="anim">
+  <div class="bt-headline">
+    <div class="bt-big">88.6%</div>
+    <div class="bt-sub">Win Rate · 1,400 Grade A+B Bets</div>
+    <div class="bt-row">
+      <span class="bt-stat">✓ 1,240 wins</span>
+      <span class="bt-stat" style="margin:0 8px">•</span>
+      <span class="bt-stat">+7.9% ROI</span>
+      <span class="bt-stat" style="margin:0 8px">•</span>
+      <span class="bt-stat">Sharpe 1.16</span>
+    </div>
+  </div>
+  <div class="metrics-grid">
+    <div class="metric-box"><div class="metric-lbl">GRADE A RATE</div><div class="metric-val" style="color:var(--blue)">91.0%</div><div style="font-size:10px;color:var(--text3)">1,039 bets</div></div>
+    <div class="metric-box"><div class="metric-lbl">GRADE B RATE</div><div class="metric-val" style="color:#4A90C4">81.7%</div><div style="font-size:10px;color:var(--text3)">361 bets</div></div>
+    <div class="metric-box"><div class="metric-lbl">BEST SYSTEM</div><div class="metric-val" style="color:var(--blue);font-size:16px">ZONE 23</div><div style="font-size:10px;color:var(--text3)">94.0% cover</div></div>
+    <div class="metric-box"><div class="metric-lbl">AVOID</div><div class="metric-val" style="color:var(--text3);font-size:14px">SWITCH ALL</div><div style="font-size:10px;color:var(--loss)">54% — coin flip</div></div>
+  </div>
+  <div class="section-card">
+    <div class="section-title">YEAR-OVER-YEAR WIN RATE (2015–2025)</div>
+    <div class="bar-chart">
+      ${YEARS.map(y=>{
+        const h=Math.max(4,((y.v-70)/25)*100);
+        const c=y.v>=88?'#1B6CA8':y.v>=85?'#4A90C4':'#2FAE7A';
+        return `<div class="bar-item"><div class="bar-val">${y.v}%</div><div class="bar-body" style="height:${h}%;background:${c}"></div><div class="bar-lbl">${y.y}</div></div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:4px"><div style="width:18px;height:1px;background:#D4A017"></div><span style="font-size:9px;color:#D4A017">70% target</span></div>
+  </div>
+  <div class="section-card">
+    <div class="section-title">BY DEFENSIVE SYSTEM</div>
+    ${SYSTEMS.map(s=>`
+    <div class="sys-row">
+      <div style="flex:1"><div class="sys-name">${s.sys.replace(/_/g,' ')}</div><div style="font-size:9px;color:var(--text3)">${s.bets} bets</div></div>
+      <div><div class="sys-pct" style="color:${s.color}">${s.pct}%</div><div class="mini-bar"><div class="mini-fill" style="width:${Math.max(0,(s.pct-50)/0.5)}%;background:${s.color}"></div></div></div>
+    </div>`).join('')}
+  </div></div>`;
+}
+
+function renderHistory() {
+  return `<div class="anim">
+  <div class="section-card">
+    <div class="section-title">ALL-TIME PG BENCHMARKS (1980–2026)</div>
+    <div style="display:flex;gap:4px;padding-bottom:6px;border-bottom:1px solid var(--tan-d);margin-bottom:4px">
+      <span style="flex:2;font-size:8px;color:var(--text3)">Player</span>
+      <span style="flex:1;font-size:8px;color:var(--text3);text-align:right">AST</span>
+      <span style="flex:1;font-size:8px;color:var(--text3);text-align:right">vs Elite</span>
+      <span style="flex:1;font-size:8px;color:var(--text3);text-align:right">vs Poor</span>
+      <span style="flex:1;font-size:8px;color:var(--text3);text-align:right">TO</span>
+    </div>
+    ${HISTORY.map(p=>`
+    <div style="display:flex;gap:4px;padding:6px 0;border-bottom:1px solid var(--tan-m);align-items:center">
+      <div style="flex:2"><div style="font-size:11px;font-family:Georgia;font-weight:700;color:var(--text)">${p.pg}</div><div style="font-size:9px;color:var(--text3)">${p.era}</div></div>
+      <div style="flex:1;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:var(--text)">${p.ast}</div>
+      <div style="flex:1;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:var(--text3)">${p.elite}</div>
+      <div style="flex:1;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:var(--blue);font-weight:700">${p.poor}</div>
+      <div style="flex:1;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:var(--text3)">${p.to}</div>
+    </div>`).join('')}
+  </div>
+  <div class="section-card">
+    <div class="section-title">KEY HISTORICAL FINDINGS</div>
+    ${[
+      {t:'Pace Revolution (2015–2020)',b:"D'Antoni-influenced fast-pace drove PG assist floors up. League avg pace rose from 92 → 104 poss/game."},
+      {t:'Switch Everything Killed ASTs',b:'Post-2015 switch coverage reduced PG assists by 1.4/game vs pre-2015 baselines. Model adjusts era.'},
+      {t:'TO-Steal Covariance',b:'Facing top-10 steal% opponent increases PG TOs by 22% AND reduces assist rate by 8% simultaneously.'},
+    ].map(k=>`<div style="padding:9px 0;border-bottom:1px solid var(--tan-m)"><div style="font-size:11px;font-family:Georgia;font-weight:700;color:var(--blue);margin-bottom:3px">◆ ${k.t}</div><div style="font-size:11px;color:var(--text2);line-height:1.5">${k.b}</div></div>`).join('')}
+  </div></div>`;
+}
+
+const RENDERERS = [renderProps, renderMatchups, renderAlgorithm, renderBacktest, renderHistory];
+
+function setTab(i) {
+  currentTab = i;
+  // Update header
+  document.getElementById('hdr').children[0].children[0].textContent = HEADERS[i].t;
+  document.getElementById('hdr').children[0].children[1].textContent = HEADERS[i].s;
+  document.getElementById('hdr-badge').textContent = HEADERS[i].b;
+  // Update nav
+  for(let j=0;j<5;j++){
+    document.getElementById('ni'+j).className='nav-icon'+(j===i?' active':'');
+    document.getElementById('nl'+j).className='nav-lbl'+(j===i?' active':'');
+  }
+  // Render content
+  document.getElementById('content').innerHTML = RENDERERS[i]();
+}
+
+// Init
+setTab(0);
+</script>
+</body>
+</html>

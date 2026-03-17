@@ -1,0 +1,88 @@
+/**
+ * Basketball IQ — CourtIQ Android App
+ * React Native 0.76.5
+ */
+
+import React from 'react';
+import { StatusBar, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Provider } from 'react-redux';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { store } from './src/store';
+import { Colors } from './src/utils/colors';
+
+// Screens
+import PropsScreen     from './src/screens/PropsScreen';
+import AlgorithmScreen from './src/screens/AlgorithmScreen';
+import BacktestScreen  from './src/screens/BacktestScreen';
+import HistoryScreen   from './src/screens/HistoryScreen';
+import MatchupsScreen  from './src/screens/MatchupsScreen';
+
+const Tab = createBottomTabNavigator();
+
+function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+  const icons: Record<string, string> = {
+    Props: '🎯', Algorithm: '⚙️', Backtest: '📊', History: '📖', Matchups: '🏀',
+  };
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{
+        width: 32, height: 32, borderRadius: 8,
+        backgroundColor: focused ? Colors.bluePale : 'transparent',
+        alignItems: 'center', justifyContent: 'center',
+      }}>
+        {/* Replaced emoji with text label for production — use react-native-vector-icons in build */}
+        <View style={{ width: 18, height: 18, borderRadius: 4, backgroundColor: focused ? Colors.blue : Colors.tanDeep }} />
+      </View>
+    </View>
+  );
+}
+
+export default function App() {
+  return (
+    <Provider store={store}>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <StatusBar backgroundColor={Colors.blueDark} barStyle="light-content" />
+          <Tab.Navigator
+            screenOptions={({ route }) => ({
+              tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
+              tabBarActiveTintColor:   Colors.blue,
+              tabBarInactiveTintColor: Colors.textTertiary,
+              tabBarStyle: {
+                backgroundColor: Colors.surfaceElevated,
+                borderTopColor:  Colors.border,
+                borderTopWidth:  1,
+                height: 60,
+                paddingBottom: 6,
+              },
+              tabBarLabelStyle: {
+                fontFamily: 'Georgia',
+                fontSize: 10,
+                fontWeight: '600',
+              },
+              headerStyle: {
+                backgroundColor: Colors.blueDark,
+                shadowColor: 'transparent',
+                elevation: 0,
+              },
+              headerTintColor: Colors.textOnBlue,
+              headerTitleStyle: {
+                fontFamily: 'Georgia',
+                fontWeight: '700',
+                fontSize: 16,
+              },
+            })}
+          >
+            <Tab.Screen name="Props"      component={PropsScreen}     options={{ title: "Today's Props",    headerTitle: '🎯 PG Props — Mar 17'      }} />
+            <Tab.Screen name="Matchups"   component={MatchupsScreen}  options={{ title: 'Matchups',          headerTitle: '🏀 Tonight\'s NBA Slate'   }} />
+            <Tab.Screen name="Algorithm"  component={AlgorithmScreen} options={{ title: 'Algorithm',         headerTitle: '⚙️ Prediction Model'        }} />
+            <Tab.Screen name="Backtest"   component={BacktestScreen}  options={{ title: 'Backtest',          headerTitle: '📊 Historical Performance'  }} />
+            <Tab.Screen name="History"    component={HistoryScreen}   options={{ title: 'PG History',        headerTitle: '📖 PG Historical Database'  }} />
+          </Tab.Navigator>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </Provider>
+  );
+}

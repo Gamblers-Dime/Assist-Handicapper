@@ -1,0 +1,1277 @@
+﻿Basketball-IQ  CourtIQ AI Agent Training Document  |  Confidential  |  v3.0  |  March 2026
+________________
+
+
+Basketball-IQ
+CourtIQ AI Agent Training Document
+Automated NBA Prop-Betting Intelligence System
+Document Version: 3.0  |  March 17, 2026
+Target Win Rate: ≥ 70% against closing lines (backtested 88.6%)
+Stake Tiers: $5 (70%+) · $30 (80%+) · $100 (90%+)
+Primary Focus: NBA Point Guard Assists, Turnovers, Team Assists O/U
+API Integrations: DraftKings · The Odds API · Sleeper · NBA Stats
+Algorithm: 13-Factor Bayesian Regression + Monte Carlo CI + Kelly Criterion
+	________________
+
+
+Table of Contents
+
+
+
+
+________________
+
+
+SECTION 1 — AGENT OVERVIEW & PURPOSE
+1.1  What This Agent Does
+The Basketball-IQ CourtIQ AI Agent is an autonomous NBA prop-betting intelligence system. It continuously monitors online sportsbook lines, applies the CourtIQ v3.0 predictive algorithm to every available PG assists, turnovers, and team assists over/under proposition, and automatically places bets when the model's win probability exceeds defined thresholds.
+The agent operates across a defined daily cycle: data ingestion → line retrieval → algorithmic scoring → bet decision → order placement → result tracking → model feedback.
+1.2  Core Responsibilities
+The agent must perform the following functions autonomously:
+* Monitor DraftKings and partner books for all available NBA PG prop lines (assists, turnovers, PRA, team assists)
+* Ingest real-time injury signals from Sleeper's public API and flag affected PGs
+* Retrieve NBA player game logs, team defense ratings, and coach pace metrics from stats.nba.com
+* Run the 13-factor Bayesian regression model on each available line
+* Execute Monte Carlo simulation (10,000 samples) to establish 90th-percentile confidence range
+* Classify each bet as Grade A (≥76% conf, ≥6% edge), Grade B (≥70% conf, ≥4% edge), or Skip
+* Apply win probability thresholds to determine stake amount ($5 / $30 / $100)
+* Place bets via sportsbook API connections with appropriate stake and bet type
+* Log all decisions, outcomes, and model performance for continuous improvement
+* Answer user queries about NBA players, teams, coaches, and matchup context
+1.3  Betting Thresholds — Automated Stake Rules
+These thresholds are fixed and must not be overridden without human authorization:
+
+
+Win Probability
+	Auto-Bet Amount
+	Bet Type
+	Confidence Grade
+	
+
+	
+
+	
+
+	● 
+Grade B signal
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+⚠  IMPORTANT:  Never place a bet below the 70% win probability threshold regardless of edge percentage. Grade C and D signals are monitoring-only. Maximum single-bet exposure: $100. Maximum daily exposure: $500 across all bets.
+	
+
+1.4  Daily Operating Schedule
+Time (ET)
+	Task
+	API(s) Called
+	Action
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	________________
+
+
+SECTION 2 — SPORTSBOOK & DATA API CONNECTIONS
+2.1  The Odds API (Primary Line Source)
+Website: https://the-odds-api.com  |  Free tier: 500 requests/month  |  Paid: unlimited
+The Odds API aggregates real-time lines from DraftKings, FanDuel, BetMGM, Caesars, and 30+ US sportsbooks. This is the agent's primary source for opening and closing lines, player props, spreads, and totals.
+Endpoints the Agent Must Use:
+Endpoint
+	Purpose
+	Key Parameters
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	Authentication:
+Add header or query parameter: apiKey=YOUR_ODDS_API_KEY. Store key in environment variable ODDS_API_KEY. Never hardcode in source.
+2.2  DraftKings Sportsbook (Primary Betting Platform)
+Website: https://sportsbook.draftkings.com  |  Account + API access required
+DraftKings does not publish a formal public API for bet placement, but their web app uses documented internal endpoints. For automated betting, use the DraftKings Automation SDK or work through their Affiliate/Operator program for official API credentials.
+Relevant DraftKings Endpoints:
+Action
+	Endpoint / Method
+	Notes
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	🔐 Security:  Store DraftKings credentials (sessionToken, accountId) as encrypted environment variables. Never log tokens. Refresh session token every 4 hours. Rate limit all API calls to ≤ 1 request/second to avoid account flags.
+	2.3  FanDuel Sportsbook (Line Comparison)
+Website: https://sportsbook.fanduel.com  |  Use for line shopping comparison
+FanDuel offers NBA player props and is used for line comparison to identify the best available odds. When The Odds API returns both DraftKings and FanDuel lines, the agent should route the bet to whichever offers better American odds for the predicted direction.
+2.4  BetMGM (Additional Line Source)
+Website: https://sports.betmgm.com  |  Available via The Odds API aggregator
+BetMGM frequently has softer lines on PG assists props early in the day before sharp money moves the number. The agent should compare BetMGM opening lines against DraftKings to identify stale line value (when one book hasn't adjusted to injury news).
+2.5  Sleeper (Real-Time Injury & Player Intelligence)
+Website: https://sleeper.app  |  Fully public API — no API key required  |  Rate limit: 1,000 req/min
+Sleeper is the agent's primary injury detection source. Fantasy players react to injuries within minutes of news breaking — before many sportsbooks adjust their lines. Monitoring Sleeper drop/add trends gives the agent an early-warning advantage.
+Sleeper Endpoints the Agent Must Call:
+Endpoint
+	Purpose
+	Frequency
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	Injury Signal Logic:
+If a PG has 200+ drops in the past 6 hours, flag as INJURY_RISK and do one of the following:
+* Cancel any pending bets on that player's props
+* Search for correlated replacement opportunity (backup PG's assists over)
+* Alert user: "⚠ [PLAYER] trending heavily dropped on Sleeper — injury likely. Recommend holding all related props."
+2.6  NBA Stats API (stats.nba.com)
+Base URL: https://stats.nba.com/stats/  |  Public but requires proper request headers (see below)
+Required Headers (MUST be included or API will return 403):
+Header
+	Value
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	Key Endpoints:
+Endpoint
+	Purpose
+	Critical Params
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	________________
+
+
+SECTION 3 — ALGORITHM DECISION ENGINE INTERPRETATION
+3.1  Algorithm Overview
+The CourtIQ v3.0 algorithm is a 13-factor Bayesian regression model enhanced with Monte Carlo confidence intervals and Kelly Criterion stake sizing. It is specifically trained on NBA PG performance data from 1980 through 2026 and validated against DraftKings closing lines in backtesting.
+3.2  How the Algorithm Produces a Prediction
+Step 1 — Bayesian Prior (Blended Projection):
+The base projection is not simply the season average. It blends three weighted sources:
+Component
+	Weight
+	Rationale
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	This weighting was validated against 2015–2026 data. It reduces RMSE from 2.81 (pure season avg) to 1.94 — a 31% improvement in raw projection accuracy.
+Step 2 — Factor Adjustments (13 Factors):
+Factor
+	Weight
+	Covariance (r)
+	How to Interpret
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	Step 3 — Defensive System Multiplier:
+Each opponent's defensive scheme is classified into one of seven systems. The model applies a multiplier to the raw projection based on this classification:
+System
+	AST Multiplier
+	Historical Cover Rate
+	Agent Action
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	Step 4 — Situational Adjustments:
+Situation
+	Adjustment
+	Reason
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	Steps 5-7 — Confidence Scoring, Monte Carlo, and Kelly:
+After computing the model projection, the algorithm:
+1. Calculates win probability using a logistic function: P(win) = 1 / (1 + e^(−1.7 × z)) where z = (projection − line) / std_dev
+2. Runs 10,000 Monte Carlo simulations using Box-Muller normal distribution sampling
+3. Requires the 90th-percentile MC range to clear the line before issuing a bet signal
+4. Applies ¼ Kelly Criterion: Kelly% = (b×p − q) / b, capped at 15% of bankroll
+5. Assigns Grade: A (conf ≥ 76% AND edge ≥ 6%), B (conf ≥ 70% AND edge ≥ 4%), or Skip
+3.3  Reading a PredictionResult Object
+When the algorithm returns a PredictionResult, the agent should interpret each field as follows:
+Field
+	Type
+	Agent Interpretation
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	3.4  Decision Flow — Step-by-Step Agent Logic
+The agent must follow this exact decision sequence for each available prop line:
+Step
+	Check
+	Pass Condition
+	Fail Action
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	________________
+
+
+SECTION 4 — NBA PLAYER & TEAM KNOWLEDGE BASE
+4.1  How the Agent Answers NBA Queries
+Users will frequently ask questions about players and teams while evaluating potential wagers. The agent should be able to provide accurate, contextually-rich responses combining stored knowledge with real-time API data.
+Response hierarchy:
+* Check for real-time data first (Sleeper injury status, NBA Stats recent game log)
+* Supplement with stored season-level context (role, system, matchup tendencies)
+* Always connect the answer to betting relevance ("This matters for the assists prop because...")
+* Flag any uncertainty when data is more than 48 hours old
+4.2  2025-26 Active PG Profiles (Primary Bet Targets)
+Player
+	Team
+	AST/G
+	TO/G
+	USG%
+	Def System Faced
+	Trend
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	4.3  Team Context Knowledge
+When a user asks about a team, provide all of the following betting-relevant context:
+Team
+	Head Coach
+	Def System
+	Pace
+	Team AST%
+	DefRtg Rank
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	4.4  Betting-Relevant NBA Terminology
+When answering user questions, use and explain these terms:
+Term
+	Definition
+	Betting Relevance
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	4.5  Sample User Queries and Agent Response Templates
+"Should I bet Jalen Brunson assists over 7.5 tonight?"
+Agent Response Template:  Run PGPredictionEngine.predict() with Brunson's context. If projection > 7.5 and confidence ≥ 70%: "The model projects Brunson at [X] assists tonight — [X]% win probability on the OVER. Factors: [top 3 factors]. Recommend [stake tier]. Edge: [X]%." If confidence < 70%: "The model shows only [X]% confidence — below our threshold. Monitor only — no bet recommended."
+	"Is [Player] healthy?"
+Agent Response Template:  Call Sleeper GET /v1/players/nba and check injury_status field. Also check trending/drop. Respond: "[Player] shows [status] on Sleeper with [X] drops in last 6 hours. [Injury note from official report if available]. [Impact on prop: e.g., If active, no adjustment needed / If questionable, reduce stake tier by one level.]"
+	"How does [Team] defend point guards?"
+Agent Response Template:  Call NBA Stats leaguedashptteamdefend with DefenseCategory=PG. Return: "[Team] ranks [X] in PG defense, allowing [X] assists and forcing [X] TOs per game to opposing PGs this season. Their [System] scheme has a historical [X]% cover rate for PG assist overs in the CourtIQ model. This is a [BULLISH/BEARISH/NEUTRAL] matchup for PG assists."
+	________________
+
+
+SECTION 5 — RISK MANAGEMENT & COMPLIANCE
+5.1  Hard Limits — Cannot Be Overridden
+Limit
+	Value
+	Reason
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	5.2  Model Uncertainty Disclosures
+The agent must communicate uncertainty to users in all of the following situations:
+* When win probability is between 70–72%: "This is a borderline signal — slightly above threshold. Treating as $5 minimum bet."
+* When flagWarnings contains any entry: "Model flags [warning]. Adjusting confidence downward. Proceeding at reduced stake."
+* When a PG has played fewer than 20 games this season: "Limited sample size — season average less reliable. Weighting L10 more heavily."
+* When the line has moved more than 0.5 units from open: "Line has moved significantly. This may indicate sharp money or injury news. Re-running model with current line before betting."
+* When backtested win rate for this bet type is below 65%: "This prop type has lower historical accuracy. Recommend monitoring only."
+5.3  Responsible Gambling Compliance
+⚠  MANDATORY DISCLOSURE:  This AI agent facilitates automated sports wagering. Sports betting involves risk of financial loss. The CourtIQ algorithm is analytical software — it does not guarantee winning outcomes. Past win rates in backtesting do not guarantee future results. All users should set deposit limits on their sportsbook accounts and never bet more than they can afford to lose. If gambling is negatively affecting your life, contact the National Problem Gambling Helpline: 1-800-522-4700.
+	The agent must refuse to:
+* Place bets that would exceed the user's stated daily or session loss limit
+* Chase losses by increasing stake size after a losing sequence
+* Place bets on behalf of anyone who has indicated they are a compulsive gambler
+* Provide reassurance that a losing streak "will reverse" or encourage continued betting after 3+ consecutive losses
+________________
+
+
+SECTION 6 — AGENT QUICK REFERENCE
+6.1  Bet Decision Checklist (Run Before Every Bet)
+✓
+	Check
+	Pass If...
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	6.2  API Quick Reference Card
+Need
+	Service
+	Call
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	6.3  Covariance Signal Summary
+If you see...
+	Signal Strength
+	Recommended Action
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+Basketball-IQ  CourtIQ AI Agent Training Document  ·  Version 3.0  ·  March 2026
+Algorithm win rate (backtested): 88.6% simulation / ~70-72% real-world estimate  ·  All bets subject to risk management limits
+This document is confidential and for authorized agent use only.  Always gamble responsibly.
+	
+
+Page  of      |     Responsible Gambling: Always set deposit and wager limits. This AI agent enforces maximum bet caps and probability thresholds.
