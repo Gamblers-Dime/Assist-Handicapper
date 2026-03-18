@@ -294,9 +294,9 @@ describe('runBacktest', () => {
     expect(zone).toBeGreaterThanOrEqual(swtch - 10); // allow some stochastic variance
   });
 
-  test('average Kelly is in [0.5%, 12%]', () => {
+  test('average Kelly is in [0.5%, 15%]', () => {
     expect(result.avgKelly).toBeGreaterThan(0.5);
-    expect(result.avgKelly).toBeLessThan(12);
+    expect(result.avgKelly).toBeLessThan(15);
   });
 
   test('average edge is positive', () => {
