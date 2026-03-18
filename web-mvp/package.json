@@ -1,0 +1,13 @@
+{
+  "name": "courtiq-web-mvp",
+  "version": "3.0.0",
+  "description": "CourtIQ Basketball-IQ web MVP — NBA PG prop-bet analysis",
+  "scripts": {
+    "start": "npx serve . -p 3000 -s",
+    "dev": "npx serve . -p 3000 --cors -s",
+    "open": "npx serve . -p 3000 -s & sleep 1 && echo 'Open: http://localhost:3000'"
+  },
+  "keywords": ["basketball", "nba", "props", "betting", "algorithm"],
+  "license": "UNLICENSED",
+  "private": true
+}
