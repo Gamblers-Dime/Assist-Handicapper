@@ -1,0 +1,108 @@
+name: Build Release APK
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Assemble sideloadable APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+
+      - name: Download Gradle wrapper jar
+        run: |
+          curl -fsSL \
+            "https://github.com/gradle/gradle/raw/v8.8.0/gradle/wrapper/gradle-wrapper.jar" \
+            -o android/gradle/wrapper/gradle-wrapper.jar
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Set up signing keystore
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$RELEASE_KEYSTORE_BASE64" ]; then
+            echo "Using release keystore from secrets…"
+            echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > android/app/courtiq-release.keystore
+            {
+              echo "MYAPP_UPLOAD_STORE_FILE=courtiq-release.keystore"
+              echo "MYAPP_UPLOAD_KEY_ALIAS=$RELEASE_KEY_ALIAS"
+              echo "MYAPP_UPLOAD_STORE_PASSWORD=$RELEASE_KEYSTORE_PASSWORD"
+              echo "MYAPP_UPLOAD_KEY_PASSWORD=$RELEASE_KEY_PASSWORD"
+            } >> android/gradle.properties
+          else
+            echo "No release keystore secret found — generating a debug keystore for sideloading."
+            keytool -genkey -v \
+              -keystore android/app/debug.keystore \
+              -alias androiddebugkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass android \
+              -keypass android \
+              -dname "CN=CourtIQ Debug,O=GamblersDime,C=US" \
+              -noprompt
+          fi
+
+      - name: Bundle JavaScript (Metro)
+        run: |
+          mkdir -p android/app/src/main/assets
+          npx react-native bundle \
+            --platform android \
+            --dev false \
+            --entry-file index.ts \
+            --bundle-output android/app/src/main/assets/index.android.bundle \
+            --assets-dest android/app/src/main/res
+
+      - name: Assemble release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Locate APK
+        run: |
+          find android/app/build/outputs/apk -name "*.apk" | tee /tmp/apk-paths.txt
+          echo "APK_PATH=$(head -1 /tmp/apk-paths.txt)" >> $GITHUB_ENV
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CourtIQ-release-apk
+          path: android/app/build/outputs/apk/release/
+          if-no-files-found: error
+          retention-days: 30

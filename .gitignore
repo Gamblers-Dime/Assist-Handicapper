@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+android/app/build/
+android/build/
+android/.gradle/
+android/app/.cxx/
+
+# Keystores (never commit release keystores)
+*.keystore
+!android/app/debug.keystore
+
+# Gradle caches
+.gradle/
+build/
+
+# Metro bundler cache
+.metro-health-check*
+
+# React Native generated assets
+android/app/src/main/assets/index.android.bundle
+android/app/src/main/assets/index.android.bundle.map
+
+# Android generated resources
+android/app/src/main/res/drawable-*/
+android/app/src/main/res/raw/
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# TypeScript compilation output
+dist/
+*.tsbuildinfo
