@@ -44,16 +44,13 @@
     "@typescript-eslint/parser":           "^7.18.0"
   },
   "jest": {
-    "preset":          "react-native",
-    "testPathPattern": "__tests__",
+    "testMatch": ["**/__tests__/**/*.test.ts"],
     "transform": {
-      "^.+\\.(ts|tsx)$": "babel-jest"
+      "^.+\\.(ts|tsx)$": ["babel-jest", {"presets": ["@babel/preset-env", "@babel/preset-typescript"]}]
     },
-    "transformIgnorePatterns": [
-      "node_modules/(?!(react-native|@react-native|@react-navigation|react-redux|@reduxjs)/)"
-    ],
+    "transformIgnorePatterns": ["node_modules/"],
     "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json"],
-    "setupFilesAfterFramework": []
+    "testEnvironment": "node"
   },
   "engines": {
     "node": ">=18"
