@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>CourtIQ · Basketball-IQ Browser Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── PALETTE (matches src/utils/colors.ts) ───────────────────────────────── */
+  :root {
+    --tan:        #F2E8D5;
+    --tan-l:      #FAF5EC;
+    --tan-m:      #E8D9C0;
+    --tan-d:      #D4C4A8;
+    --blue:       #1B6CA8;
+    --blue-l:     #4A90C4;
+    --blue-p:     #D6E9F8;
+    --blue-dk:    #0F4A7A;
+    --blue-vib:   #2980D9;
+    --text:       #1A1208;
+    --text2:      #5A4A32;
+    --text3:      #8A7460;
+    --win:        #1B8A5A;
+    --loss:       #C0392B;
+    --push:       #7A6A52;
+    --grade-b:    #2FAE7A;
+    --grade-c:    #D4A017;
+    --grade-d:    #B0A090;
+    --border:     #DDD0B8;
+    --border-s:   #C4B49A;
+    --surface:    #FAF5EC;
+    --bg:         #F2E8D5;
+    --surface-el: #FFFFFF;
+  }
+
+  body {
+    background: #E8E0CE;
+    font-family: Georgia, serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 24px 12px 40px;
+  }
+
+  /* ── Page title ─────────────────────────────────────────────────────────── */
+  .page-title { text-align: center; margin-bottom: 24px; }
+  .page-title h1 { color: #1a0e05; font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
+  .page-title p  { color: #7a6040; font-size: 13px; margin-top: 5px; }
+
+  /* ── Phone shell ────────────────────────────────────────────────────────── */
+  .phone {
+    width: 390px;
+    background: var(--bg);
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow:
+      0 32px 80px rgba(0,0,0,0.28),
+      0 0 0 12px #2a1a0a,
+      0 0 0 14px #1a0e05;
+    min-height: 844px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── Status bar ─────────────────────────────────────────────────────────── */
+  .status {
+    background: var(--blue-dk);
+    padding: 14px 24px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .status-time  { color: #fff; font-size: 15px; font-weight: 700; }
+  .status-icons { color: #fff; font-size: 12px; letter-spacing: 1px; }
+
+  /* ── Header ─────────────────────────────────────────────────────────────── */
+  .header {
+    background: var(--blue-dk);
+    padding: 8px 18px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #0a3a5a;
+    flex-shrink: 0;
+  }
+  .header-title { color: #fff; font-size: 16px; font-weight: 700; }
+  .header-sub   { color: #8ab8d8; font-size: 10px; letter-spacing: 1px; margin-top: 1px; }
+  .header-badge {
+    background: var(--blue);
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* ── Summary bar ────────────────────────────────────────────────────────── */
+  .summary {
+    display: flex;
+    background: var(--surface-el);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .sum-item {
+    flex: 1;
+    padding: 10px 6px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+  }
+  .sum-item:last-child { border-right: none; }
+  .sum-val { font-size: 16px; font-weight: 700; color: var(--text); font-family: Georgia; }
+  .sum-val.blue  { color: var(--blue); }
+  .sum-val.green { color: var(--win); }
+  .sum-val.red   { color: var(--loss); }
+  .sum-lbl { font-size: 8px; color: var(--text3); letter-spacing: 0.8px; margin-top: 1px; }
+
+  /* ── Scroll area ─────────────────────────────────────────────────────────── */
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    background: var(--tan);
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll::-webkit-scrollbar { width: 3px; }
+  .scroll::-webkit-scrollbar-thumb { background: var(--tan-d); border-radius: 2px; }
+
+  /* ── Bottom navigation ──────────────────────────────────────────────────── */
+  .bottom-nav {
+    background: var(--surface-el);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 6px 0 20px;
+    flex-shrink: 0;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    padding: 2px 0;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nav-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .nav-icon.active { background: var(--blue-p); }
+  .nav-lbl { font-size: 9px; color: var(--text3); font-family: Georgia; }
+  .nav-lbl.active { color: var(--blue); font-weight: 700; }
+
+  /* ── Section title ──────────────────────────────────────────────────────── */
+  .section-title {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--blue);
+    font-weight: 700;
+    font-family: Georgia;
+    margin-bottom: 10px;
+  }
+
+  /* ── Section card ────────────────────────────────────────────────────────── */
+  .section-card {
+    background: var(--surface-el);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(90,60,20,0.08);
+  }
+
+  /* ── Prop card ───────────────────────────────────────────────────────────── */
+  .prop-card {
+    background: var(--surface-el);
+    border-radius: 10px;
+    padding: 13px;
+    margin-bottom: 11px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--blue);
+    box-shadow: 0 2px 8px rgba(90,60,20,0.08);
+  }
+  .prop-card.grade-b { border-left-color: var(--grade-b); }
+  .prop-head  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 9px; }
+  .prop-player { font-size: 14px; font-weight: 700; color: var(--text); }
+  .prop-meta   { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+  /* ── Grade chip ──────────────────────────────────────────────────────────── */
+  .grade-chip { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+  .grade-a { background: rgba(27,108,168,0.12); color: var(--blue); border: 1px solid rgba(27,108,168,0.3); }
+  .grade-b-chip { background: rgba(47,174,122,0.12); color: var(--grade-b); border: 1px solid rgba(47,174,122,0.3); }
+
+  /* ── Odds row ────────────────────────────────────────────────────────────── */
+  .odds-row { display: flex; gap: 7px; margin-bottom: 8px; }
+  .odds-box {
+    flex: 1;
+    background: var(--tan);
+    border: 1px solid var(--tan-d);
+    border-radius: 7px;
+    padding: 7px;
+    text-align: center;
+  }
+  .odds-box.highlight { background: rgba(27,108,168,0.08); border-color: rgba(27,108,168,0.3); }
+  .odds-label { font-size: 7px; letter-spacing: 1px; color: var(--text3); margin-bottom: 2px; font-family: Georgia; }
+  .odds-val { font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; color: var(--text); }
+  .odds-val.blue  { color: var(--blue); }
+  .odds-val.green { color: var(--grade-b); }
+
+  /* ── Confidence bar ──────────────────────────────────────────────────────── */
+  .conf-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .conf-bar { flex: 1; height: 5px; background: var(--tan-m); border-radius: 3px; overflow: hidden; }
+  .conf-fill { height: 100%; border-radius: 3px; }
+  .conf-label { font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700; min-width: 36px; }
+
+  /* ── Factor chips ────────────────────────────────────────────────────────── */
+  .factor-row { display: flex; flex-wrap: wrap; gap: 5px; }
+  .factor-chip { padding: 3px 7px; border-radius: 4px; font-size: 9px; font-weight: 600; }
+  .chip-up { background: rgba(27,108,168,0.1); color: var(--blue); }
+  .chip-dn { background: rgba(192,57,43,0.1); color: var(--loss); }
+
+  /* ── Matchup card ────────────────────────────────────────────────────────── */
+  .matchup-card {
+    background: var(--surface-el);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 6px rgba(90,60,20,0.07);
+  }
+  .mc-teams  { font-size: 14px; font-weight: 700; color: var(--text); }
+  .mc-at     { color: var(--text3); font-weight: 400; }
+  .mc-pgs    { font-size: 10px; color: var(--text2); margin-top: 2px; }
+  .mc-time   { font-size: 9px; color: var(--text3); font-family: 'Courier New', monospace; margin-top: 1px; }
+  .ou-box    { background: var(--blue-p); border-radius: 7px; padding: 6px 10px; text-align: center; }
+  .ou-l      { font-size: 7px; color: var(--blue); letter-spacing: 1px; }
+  .ou-v      { font-family: 'Courier New', monospace; font-size: 14px; color: var(--blue); font-weight: 700; }
+
+  /* ── Algorithm screen ────────────────────────────────────────────────────── */
+  .factor-row-algo { display: flex; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--tan-m); }
+  .fa-name { flex: 1; }
+  .fa-n    { font-size: 11px; color: var(--text); font-family: Georgia; font-weight: 700; }
+  .fa-d    { font-size: 9px; color: var(--text3); }
+  .fa-r    { font-size: 9px; font-family: 'Courier New', monospace; color: var(--text3); }
+  .fa-w    { font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; color: var(--blue); text-align: right; }
+  .w-bar   { width: 60px; height: 4px; background: var(--tan-m); border-radius: 2px; overflow: hidden; margin-top: 3px; }
+  .w-fill  { height: 100%; background: var(--blue); border-radius: 2px; }
+
+  /* ── Backtest screen ─────────────────────────────────────────────────────── */
+  .bt-headline {
+    background: rgba(27,138,90,0.1);
+    border: 2px solid rgba(27,138,90,0.4);
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .bt-big  { font-size: 48px; font-weight: 700; color: var(--win); font-family: Georgia; line-height: 1; }
+  .bt-sub  { font-size: 11px; color: var(--text2); margin-top: 5px; }
+  .bt-row  { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+  .bt-stat { font-size: 11px; font-family: 'Courier New', monospace; color: var(--text2); }
+
+  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .metric-box   { background: var(--surface-el); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .metric-lbl   { font-size: 8px; letter-spacing: 1.5px; color: var(--text3); font-family: Georgia; margin-bottom: 4px; }
+  .metric-val   { font-size: 22px; font-weight: 700; font-family: Georgia; }
+
+  /* ── System rows ─────────────────────────────────────────────────────────── */
+  .sys-row  { display: flex; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--tan-m); }
+  .sys-name { flex: 1; font-size: 11px; color: var(--text); font-family: Georgia; }
+  .sys-pct  { font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; }
+  .mini-bar { width: 60px; height: 4px; background: var(--tan-m); border-radius: 2px; overflow: hidden; margin-top: 2px; }
+  .mini-fill { height: 100%; border-radius: 2px; }
+
+  /* ── Bar chart ───────────────────────────────────────────────────────────── */
+  .bar-chart  { display: flex; align-items: flex-end; gap: 4px; height: 80px; margin: 8px 0; }
+  .bar-item   { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .bar-val    { font-size: 7px; font-family: 'Courier New', monospace; color: var(--text3); margin-bottom: 2px; }
+  .bar-body   { width: 100%; border-radius: 3px 3px 0 0; min-height: 4px; }
+  .bar-lbl    { font-size: 7px; color: var(--text3); margin-top: 3px; }
+
+  /* ── Bet slip ─────────────────────────────────────────────────────────────── */
+  .slip-item {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--tan-m);
+  }
+  .slip-row-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .grade-badge {
+    width: 24px; height: 24px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid;
+    font-family: Georgia;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .slip-player { font-family: Georgia; font-size: 14px; font-weight: 700; color: var(--text); }
+  .slip-meta   { font-size: 10px; color: var(--text3); }
+  .remove-btn  { margin-left: auto; font-size: 14px; color: var(--text3); cursor: pointer; padding: 0 2px; }
+  .slip-mid { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .dir-box { padding: 3px 7px; border-radius: 4px; border: 1px solid; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; }
+  .slip-mono { font-size: 11px; font-family: 'Courier New', monospace; color: var(--text2); }
+  .conf-mono { font-size: 11px; font-family: 'Courier New', monospace; font-weight: 700; }
+  .edge-mono { font-size: 11px; font-family: 'Courier New', monospace; color: var(--grade-b); }
+  .stake-row { display: flex; align-items: center; gap: 10px; }
+  .stake-label { font-size: 9px; letter-spacing: 1.5px; color: var(--text3); font-family: Georgia; min-width: 54px; }
+  .stake-input {
+    background: var(--tan); border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 10px; font-family: 'Courier New', monospace; font-size: 14px;
+    font-weight: 700; color: var(--text); width: 70px;
+  }
+  .stake-input:focus { outline: 2px solid var(--blue); }
+  .kelly-hint { font-size: 10px; color: var(--text3); font-family: 'Courier New', monospace; }
+  .place-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px; border-top: 1px solid var(--border); background: var(--tan);
+  }
+  .total-label { font-size: 9px; letter-spacing: 1.5px; color: var(--text3); font-family: Georgia; }
+  .total-val   { font-family: Georgia; font-size: 20px; font-weight: 700; color: var(--text); }
+  .place-btn {
+    background: var(--blue); color: #fff; border: none; cursor: pointer;
+    padding: 10px 22px; border-radius: 10px; font-family: Georgia;
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+  }
+  .place-btn:hover { background: var(--blue-dk); }
+  .rg-bar {
+    background: rgba(212,160,23,0.12); border: 1px solid rgba(212,160,23,0.35);
+    border-radius: 8px; padding: 9px 12px; margin-bottom: 14px;
+    font-size: 10px; color: var(--text2); line-height: 1.5;
+  }
+  .rg-link { color: var(--blue); font-weight: 700; }
+  .empty-card {
+    background: var(--surface-el); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px; text-align: center; margin-bottom: 10px;
+  }
+  .empty-text { font-family: Georgia; font-size: 14px; color: var(--text2); }
+  .empty-sub  { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* ── History/PG Data screen ─────────────────────────────────────────────── */
+  .hist-row {
+    display: flex;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--tan-m);
+    align-items: center;
+  }
+  .hist-player { font-family: Georgia; font-size: 11px; font-weight: 700; color: var(--text); }
+  .hist-meta   { font-size: 9px; color: var(--text2); margin-top: 1px; }
+  .hist-date   { font-size: 8px; color: var(--text3); font-family: 'Courier New', monospace; margin-top: 2px; }
+  .status-badge { padding: 2px 7px; border-radius: 99px; }
+  .status-text  { font-family: 'Courier New', monospace; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
+  .pnl-val { font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; margin-top: 3px; text-align: right; }
+
+  /* ── Settings screen ─────────────────────────────────────────────────────── */
+  .status-card {
+    background: var(--surface-el); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; margin-bottom: 10px;
+  }
+  .agent-status-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .agent-status-text { font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+  .agent-msg { font-size: 11px; color: var(--text2); margin-bottom: 12px; }
+  .agent-btn-row { display: flex; gap: 10px; }
+  .agent-btn {
+    flex: 1; padding: 9px 0; border-radius: 8px; border: none;
+    font-family: Georgia; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.5px; cursor: pointer; color: #fff; text-align: center;
+  }
+  .agent-btn.enable  { background: var(--blue); }
+  .agent-btn.disable { background: var(--tan-m); color: var(--text2); }
+  .agent-btn.scan    { background: var(--grade-b); }
+  .setting-row {
+    display: flex; align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--tan-m);
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-label { font-size: 13px; font-family: Georgia; color: var(--text); font-weight: 600; }
+  .setting-hint  { font-size: 10px; color: var(--text3); margin-top: 2px; }
+  .num-input-wrap {
+    display: flex; align-items: center;
+    background: var(--tan); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 8px;
+  }
+  .num-prefix { font-size: 12px; color: var(--text3); margin-right: 2px; }
+  .num-input {
+    font-family: 'Courier New', monospace; font-size: 14px; font-weight: 700;
+    color: var(--text); width: 60px; border: none; background: transparent;
+  }
+  .num-input:focus { outline: none; }
+  .toggle-track {
+    width: 46px; height: 26px; border-radius: 13px; background: var(--tan-d);
+    position: relative; cursor: pointer; flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .toggle-track.on { background: var(--blue); }
+  .toggle-thumb {
+    width: 22px; height: 22px; border-radius: 11px; background: #fff;
+    position: absolute; top: 2px; left: 2px;
+    transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  }
+  .toggle-track.on .toggle-thumb { left: 22px; }
+  .grade-toggle-row { display: flex; gap: 8px; }
+  .grade-toggle {
+    padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--tan); font-family: Georgia; font-size: 11px;
+    color: var(--text2); font-weight: 600; cursor: pointer;
+  }
+  .grade-toggle.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .bankroll-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; }
+  .bankroll-lbl { font-size: 9px; letter-spacing: 1.5px; color: var(--text3); font-family: Georgia; }
+  .bankroll-val { font-family: Georgia; font-size: 24px; font-weight: 700; color: var(--text); }
+  .reset-btn {
+    background: var(--tan-m); border: none; border-radius: 6px; padding: 6px 12px;
+    font-size: 11px; font-family: Georgia; color: var(--text2); cursor: pointer;
+  }
+  .disclaimer {
+    background: var(--tan-m); border: 1px solid var(--tan-d); border-radius: 10px;
+    padding: 14px; margin-top: 16px;
+  }
+  .disclaimer-title { font-size: 9px; letter-spacing: 2px; color: var(--text2); font-family: Georgia; font-weight: 700; margin-bottom: 8px; }
+  .disclaimer-text  { font-size: 11px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Animations ──────────────────────────────────────────────────────────── */
+  @keyframes spin    { to { transform: rotate(360deg); } }
+  @keyframes fadeIn  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .anim { animation: fadeIn 0.3s ease; }
+
+  /* ── Covariance table ────────────────────────────────────────────────────── */
+  .cov-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--tan-m); }
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>🏀 Basketball-IQ · CourtIQ</h1>
+  <p>Android App Browser Preview · v3.0 · All 7 Screens</p>
+</div>
+
+<div class="phone">
+
+  <!-- Status bar -->
+  <div class="status">
+    <span class="status-time" id="status-time">9:41</span>
+    <span class="status-icons">📶 🔋</span>
+  </div>
+
+  <!-- Dynamic header -->
+  <div class="header" id="hdr">
+    <div>
+      <div class="header-title" id="hdr-title">🎯 PG Props — Mar 18</div>
+      <div class="header-sub" id="hdr-sub">DRAFTKINGS LINES · ALGORITHM RANKED</div>
+    </div>
+    <div class="header-badge" id="hdr-badge">6 Props</div>
+  </div>
+
+  <!-- Dynamic summary bar -->
+  <div class="summary" id="summary-bar"></div>
+
+  <!-- Tab content -->
+  <div class="scroll" id="content"></div>
+
+  <!-- Bottom navigation -->
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="setTab(0)">
+      <div class="nav-icon" id="ni0">◉</div>
+      <span class="nav-lbl" id="nl0">Props</span>
+    </div>
+    <div class="nav-item" onclick="setTab(1)">
+      <div class="nav-icon" id="ni1">⬡</div>
+      <span class="nav-lbl" id="nl1">Matchups</span>
+    </div>
+    <div class="nav-item" onclick="setTab(2)">
+      <div class="nav-icon" id="ni2">◈</div>
+      <span class="nav-lbl" id="nl2">Bet Slip</span>
+    </div>
+    <div class="nav-item" onclick="setTab(3)">
+      <div class="nav-icon" id="ni3">⊞</div>
+      <span class="nav-lbl" id="nl3">Algorithm</span>
+    </div>
+    <div class="nav-item" onclick="setTab(4)">
+      <div class="nav-icon" id="ni4">▦</div>
+      <span class="nav-lbl" id="nl4">Backtest</span>
+    </div>
+    <div class="nav-item" onclick="setTab(5)">
+      <div class="nav-icon" id="ni5">▤</div>
+      <span class="nav-lbl" id="nl5">PG Data</span>
+    </div>
+    <div class="nav-item" onclick="setTab(6)">
+      <div class="nav-icon" id="ni6">⊛</div>
+      <span class="nav-lbl" id="nl6">Settings</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+/* ── Static clock ──────────────────────────────────────────────────────────── */
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours() % 12 || 12;
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('status-time').textContent = `${h}:${m}`;
+}
+updateClock();
+setInterval(updateClock, 60000);
+
+/* ── Data ──────────────────────────────────────────────────────────────────── */
+const PROPS = [
+  {player:'Tyrese Haliburton', team:'IND @ NYK', line:9.5, proj:10.2, dir:'OVER',  conf:78, odds:-118, edge:'+6.8%', grade:'A', kelly:'8.2%', factors:['▲ L5 Trend','▲ Team AST%','▲ Drop Coverage']},
+  {player:'Jalen Brunson',     team:'IND @ NYK', line:7.5, proj:8.0,  dir:'OVER',  conf:74, odds:-115, edge:'+5.3%', grade:'A', kelly:'6.5%', factors:['▲ Home Boost','▲ Usage']},
+  {player:'Darius Garland',    team:'CLE @ MIL', line:7.5, proj:8.1,  dir:'OVER',  conf:71, odds:-112, edge:'+4.2%', grade:'A', kelly:'5.8%', factors:['▲ L5 Trend','▲ Away Matchup']},
+  {player:'LaMelo Ball',       team:'CHA @ MIA', line:8.5, proj:8.8,  dir:'OVER',  conf:67, odds:-105, edge:'+3.1%', grade:'B', kelly:'4.1%', factors:['▲ Pace System','▼ Away Split']},
+  {player:'Cade Cunningham',   team:'DET @ WAS', line:3.5, proj:3.2,  dir:'UNDER', conf:72, odds:-110, edge:'+4.8%', grade:'A', kelly:'6.2%', factors:['▲ Weak Def','▲ TO Control']},
+  {player:'Damian Lillard',    team:'CLE @ MIL', line:6.5, proj:6.9,  dir:'OVER',  conf:63, odds:-108, edge:'+2.9%', grade:'B', kelly:'3.6%', factors:['▼ Switch Def','▲ Home System']},
+];
+
+const MATCHUPS = [
+  {away:'IND', home:'NYK', a_pg:'T. Haliburton', h_pg:'J. Brunson',   time:'7:30 PM', ou:226.5, spread:-6.5},
+  {away:'CLE', home:'MIL', a_pg:'D. Garland',    h_pg:'D. Lillard',   time:'8:00 PM', ou:224.0, spread:-5.5},
+  {away:'CHA', home:'MIA', a_pg:'LaMelo Ball',   h_pg:'T. Rozier',    time:'7:00 PM', ou:218.5, spread:1.5},
+  {away:'PHX', home:'MIN', a_pg:'D. Booker',     h_pg:'M. Conley',    time:'8:00 PM', ou:216.0, spread:3.5},
+  {away:'SAS', home:'SAC', a_pg:"De'Aaron Fox",  h_pg:'K. Murray',    time:'10:00 PM',ou:219.5, spread:-11.5},
+  {away:'PHI', home:'DEN', a_pg:'J. Holiday',    h_pg:'J. Murray',    time:'10:00 PM',ou:220.0, spread:13.5},
+];
+
+const FACTORS = [
+  {n:'L5 Rolling Trend',    d:'Strongest single predictor',       r:'r=0.58', w:'22%', wp:88},
+  {n:'Opponent DefRtg',     d:'Normalized per 100 possessions',   r:'r=0.72', w:'18%', wp:72},
+  {n:'Coach Pace System',   d:'Possessions/game weighted',        r:'r=0.68', w:'14%', wp:56},
+  {n:'Team AST% Context',   d:'PG share of team assists',         r:'r=0.84', w:'13%', wp:52},
+  {n:'PG vs PG Matchup',    d:'H2H steal% + style',               r:'r=0.61', w:'11%', wp:44},
+  {n:'Home Court Factor',   d:'+0.7 AST amplifier',               r:'r=0.52', w:'9%',  wp:36},
+  {n:'PG Usage Rate',       d:'Higher usage = more touches',      r:'r=0.63', w:'7%',  wp:28},
+  {n:'Recent Minutes',      d:'L5 vs season average',             r:'r=0.71', w:'6%',  wp:24},
+  {n:'Back-to-Back Impact', d:'Rest days differential',           r:'r=0.44', w:'4%',  wp:16},
+  {n:'Altitude Adjustment', d:'Denver/SLC venue penalty',         r:'r=0.38', w:'3%',  wp:12},
+  {n:'Rivalry Bonus',       d:'Elevated play vs divisional rival',r:'r=0.41', w:'2%',  wp:8},
+  {n:'Injury Flag',         d:'If PG or key teammate injured',    r:'r=0.67', w:'1%',  wp:4},
+  {n:'Monte Carlo CI',      d:'10,000 simulations range',         r:'n/a',    w:'–',   wp:0},
+];
+
+const SYSTEMS = [
+  {sys:'ZONE_23',          pct:94.0, bets:562, color:'#1B6CA8'},
+  {sys:'DROP_COVERAGE',    pct:88.4, bets:395, color:'#4A90C4'},
+  {sys:'AGGRESSIVE_HELP',  pct:83.0, bets:265, color:'#2FAE7A'},
+  {sys:'HYBRID_ZONE',      pct:82.1, bets:162, color:'#2FAE7A'},
+  {sys:'FUNDAMENTAL',      pct:72.7, bets:11,  color:'#D4A017'},
+  {sys:'SWITCH_EVERYTHING',pct:54.0, bets:5,   color:'#8A7460'},
+];
+
+const YEARS = [
+  {y:"'15",v:88.6},{y:"'16",v:89.3},{y:"'17",v:89.8},{y:"'18",v:87.9},
+  {y:"'19",v:88.9},{y:"'20",v:91.7},{y:"'21",v:90.0},{y:"'22",v:88.3},
+  {y:"'23",v:86.9},{y:"'24",v:87.8},{y:"'25",v:86.2},
+];
+
+const PG_HISTORY = [
+  {pg:'John Stockton',     era:'1985–2003', ast:10.5, elite:8.9,  poor:12.3, to:2.1},
+  {pg:'Magic Johnson',     era:'1979–1996', ast:11.2, elite:9.4,  poor:13.8, to:3.6},
+  {pg:'Steve Nash',        era:'1996–2014', ast:8.5,  elite:7.2,  poor:10.1, to:2.5},
+  {pg:'Chris Paul',        era:'2005–2024', ast:9.4,  elite:7.8,  poor:11.3, to:2.2},
+  {pg:'Jason Kidd',        era:'1994–2013', ast:8.7,  elite:7.3,  poor:10.8, to:3.1},
+  {pg:'Isiah Thomas',      era:'1981–1994', ast:9.3,  elite:7.9,  poor:11.8, to:3.9},
+  {pg:'Cade Cunningham',   era:'2021–now',  ast:9.2,  elite:7.8,  poor:11.0, to:3.6},
+  {pg:'Tyrese Haliburton', era:'2021–now',  ast:9.8,  elite:8.2,  poor:11.4, to:3.2},
+  {pg:'Jalen Brunson',     era:'2018–now',  ast:8.2,  elite:7.1,  poor:9.8,  to:2.8},
+  {pg:'Damian Lillard',    era:'2012–now',  ast:7.3,  elite:5.8,  poor:9.2,  to:2.8},
+];
+
+/* ── Bet slip state ─────────────────────────────────────────────────────────── */
+let betSlip = [
+  {id:'b1', player:'Tyrese Haliburton', team:'IND @ NYK', statType:'ASSISTS', line:9.5, dir:'OVER',  conf:78, odds:-118, edge:6.8, kelly:8.2, grade:'A', proj:10.2, stake:25},
+  {id:'b2', player:'Cade Cunningham',   team:'DET @ WAS', statType:'ASSISTS', line:3.5, dir:'UNDER', conf:72, odds:-110, edge:4.8, kelly:6.2, grade:'A', proj:3.2,  stake:20},
+];
+let bankroll = 1000;
+let allTimePnl = 142.50;
+let winRate = 71.4;
+
+/* ── Settings state ─────────────────────────────────────────────────────────── */
+let settings = {
+  bankroll:               1000,
+  maxSingleBet:           100,
+  maxDailyExposure:       500,
+  responsibleGamblingLimit: 200,
+  minConfidence:          70,
+  minEdgePct:             4,
+  gradesAllowed:          'A,B',
+  autoPlaceBets:          false,
+  oddsApiKey:             '',
+  agentEnabled:           false,
+};
+let agentStatus = 'idle';
+let agentMsg    = 'Agent is ready. Enable to start scanning DraftKings props.';
+
+/* ── Tab metadata ───────────────────────────────────────────────────────────── */
+const TABS = [
+  {title:"🎯 PG Props — Mar 18",        sub:'DRAFTKINGS LINES · ALGORITHM RANKED',   badge:'6 Props'},
+  {title:"🏀 Tonight's NBA Slate",       sub:'MAR 18 2026 · 6 GAMES',                badge:'6 Games'},
+  {title:'◈ Bet Slip',                   sub:'PENDING BETS · P&L TRACKING',          badge:''},
+  {title:'⊞ Prediction Model',           sub:'13-FACTOR BAYESIAN REGRESSION',         badge:'v3.0'},
+  {title:'▦ Historical Performance',     sub:'2015–2026 · 5,000 SIMULATIONS',         badge:'88.6%'},
+  {title:'▤ PG Historical Database',     sub:'1980–2026 · ALL-TIME BENCHMARKS',       badge:'10 PGs'},
+  {title:'⊛ Agent Settings',             sub:'BANKROLL · RISK LIMITS · AUTOMATION',   badge:''},
+];
+
+let currentTab = 0;
+
+/* ── Helpers ────────────────────────────────────────────────────────────────── */
+function confColor(c) { return c >= 76 ? '#1B6CA8' : c >= 70 ? '#4A90C4' : '#8A7460'; }
+function dirColor(d)  { return d === 'OVER' ? '#1B6CA8' : '#2FAE7A'; }
+function fmtPnl(n) { return (n >= 0 ? '+$' : '-$') + Math.abs(n).toFixed(2); }
+function fmtOdds(o) { return o > 0 ? `+${o}` : `${o}`; }
+
+/* ── Renderers ──────────────────────────────────────────────────────────────── */
+function renderSummary(tabIdx) {
+  const bars = [
+    // Props
+    [
+      {v:`${PROPS.length}`,         lbl:'Props Analyzed', cls:'blue'},
+      {v:`${PROPS.filter(p=>p.grade==='A').length}`, lbl:'Grade A Picks', cls:'blue'},
+      {v:'70.6%',                   lbl:'Model Win Rate', cls:''},
+      {v:'+14.1%',                  lbl:'Avg ROI',        cls:'green'},
+    ],
+    // Matchups
+    [
+      {v:`${MATCHUPS.length}`,      lbl:'Games Tonight', cls:'blue'},
+      {v:`${PROPS.length}`,         lbl:'Props Tracked', cls:'blue'},
+      {v:'224.1',                   lbl:'Avg O/U',       cls:''},
+      {v:'-3.8',                    lbl:'Avg Spread',    cls:''},
+    ],
+    // Bet Slip
+    [
+      {v:`$${bankroll.toFixed(0)}`, lbl:'Bankroll',   cls:'blue'},
+      {v:`${betSlip.length}`,       lbl:'In Slip',    cls:'blue'},
+      {v:fmtPnl(allTimePnl),        lbl:'All-Time P&L', cls:'green'},
+      {v:`${winRate.toFixed(1)}%`,  lbl:'Win Rate',   cls:'green'},
+    ],
+    // Algorithm
+    [
+      {v:'13',    lbl:'Factors',      cls:'blue'},
+      {v:'r=0.84',lbl:'Top Corr.',   cls:'blue'},
+      {v:'10K',   lbl:'MC Runs',     cls:''},
+      {v:'Kelly', lbl:'Stake Sizing',cls:''},
+    ],
+    // Backtest
+    [
+      {v:'88.6%', lbl:'Overall Rate', cls:'green'},
+      {v:'1,400', lbl:'Total Bets',   cls:'blue'},
+      {v:'+7.9%', lbl:'ROI',          cls:'green'},
+      {v:'1.16',  lbl:'Sharpe Ratio', cls:''},
+    ],
+    // PG Data
+    [
+      {v:'10',    lbl:'PGs Profiled',  cls:'blue'},
+      {v:'45yrs', lbl:'Data Range',    cls:''},
+      {v:'9.4',   lbl:'Top AST Avg',  cls:'blue'},
+      {v:'2.1',   lbl:'Best TO Avg',  cls:'green'},
+    ],
+    // Settings
+    [
+      {v:`$${bankroll.toFixed(0)}`, lbl:'Balance', cls:'blue'},
+      {v:settings.agentEnabled?'ON':'OFF', lbl:'Agent', cls: settings.agentEnabled ? 'green' : ''},
+      {v:settings.minConfidence+'%', lbl:'Min Conf', cls:''},
+      {v:settings.gradesAllowed, lbl:'Grades', cls:'blue'},
+    ],
+  ];
+  const bar = bars[tabIdx] || bars[0];
+  return bar.map(item =>
+    `<div class="sum-item"><div class="sum-val ${item.cls}">${item.v}</div><div class="sum-lbl">${item.lbl}</div></div>`
+  ).join('');
+}
+
+function renderProps() {
+  return `<div class="anim">
+    ${PROPS.map(p => {
+      const cc = confColor(p.conf);
+      const dc = dirColor(p.dir);
+      const isGradeA = p.grade === 'A';
+      return `
+      <div class="prop-card ${isGradeA ? '' : 'grade-b'}">
+        <div class="prop-head">
+          <div style="flex:1">
+            <div class="prop-player">${p.player}</div>
+            <div class="prop-meta">${p.team} · Assists O/U · DraftKings</div>
+          </div>
+          <span class="grade-chip ${isGradeA ? 'grade-a' : 'grade-b-chip'}">Grade ${p.grade}</span>
+        </div>
+        <div class="odds-row">
+          <div class="odds-box"><div class="odds-label">LINE</div><div class="odds-val">${p.line}</div></div>
+          <div class="odds-box highlight"><div class="odds-label">MODEL</div><div class="odds-val" style="color:${dc};font-size:12px">${p.dir} ${p.proj}</div></div>
+          <div class="odds-box"><div class="odds-label">KELLY</div><div class="odds-val" style="color:#5A4A32;font-size:12px">${p.kelly}</div></div>
+          <div class="odds-box"><div class="odds-label">ODDS</div><div class="odds-val" style="font-size:11px">${fmtOdds(p.odds)}</div></div>
+        </div>
+        <div class="conf-row">
+          <div class="conf-bar"><div class="conf-fill" style="width:${p.conf}%;background:${cc}"></div></div>
+          <span class="conf-label" style="color:${cc}">${p.conf}%</span>
+          <span style="font-size:10px;color:#2FAE7A;font-family:'Courier New',monospace;font-weight:700">${p.edge}</span>
+        </div>
+        <div class="factor-row">
+          ${p.factors.map(f=>`<span class="factor-chip ${f.startsWith('▲')?'chip-up':'chip-dn'}">${f}</span>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderMatchups() {
+  return `<div class="anim">
+    <div class="section-card">
+      <div class="section-title">TONIGHT'S NBA SLATE · SOURCE: DRAFTKINGS</div>
+      ${MATCHUPS.map(m=>`
+      <div class="matchup-card">
+        <div style="flex:1">
+          <div class="mc-teams">${m.away} <span class="mc-at">@</span> ${m.home}</div>
+          <div class="mc-pgs">${m.a_pg} vs ${m.h_pg}</div>
+          <div class="mc-time">${m.time} ET · Spread: ${m.spread>0?'+'+m.spread:m.spread}</div>
+        </div>
+        <div class="ou-box"><div class="ou-l">O/U</div><div class="ou-v">${m.ou}</div></div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderBetSlip() {
+  const totalStake = betSlip.reduce((s,b)=>s+b.stake, 0);
+  const slipRows = betSlip.length === 0
+    ? `<div class="empty-card"><div class="empty-text">No bets in slip</div><div class="empty-sub">Add Grade A/B picks from Today's Props tab</div></div>`
+    : `<div class="section-card" style="padding:0;overflow:hidden">
+        ${betSlip.map(item => {
+          const dc = dirColor(item.dir);
+          const gc = item.grade==='A' ? '#1B6CA8' : '#2FAE7A';
+          return `
+          <div class="slip-item">
+            <div class="slip-row-top">
+              <div class="grade-badge" style="background:${gc}20;border-color:${gc}60;color:${gc}">${item.grade}</div>
+              <div>
+                <div class="slip-player">${item.player}</div>
+                <div class="slip-meta">${item.team} · ${item.statType} · ${fmtOdds(item.odds)}</div>
+              </div>
+              <span class="remove-btn" onclick="removeBet('${item.id}')">✕</span>
+            </div>
+            <div class="slip-mid">
+              <div class="dir-box" style="background:${dc}15;border-color:${dc}40;color:${dc}">${item.dir} ${item.line}</div>
+              <span class="slip-mono">Proj: ${item.proj}</span>
+              <span class="conf-mono" style="color:${confColor(item.conf)}">${item.conf}% conf</span>
+              <span class="edge-mono">+${item.edge}% edge</span>
+            </div>
+            <div class="stake-row">
+              <span class="stake-label">STAKE ($)</span>
+              <input class="stake-input" type="number" value="${item.stake}" min="1" max="100"
+                onchange="updateStake('${item.id}', this.value)" />
+              <span class="kelly-hint">Kelly: ${item.kelly}%</span>
+            </div>
+          </div>`;
+        }).join('')}
+        <div class="place-row">
+          <div>
+            <div class="total-label">TOTAL STAKE</div>
+            <div class="total-val">$${totalStake.toFixed(2)}</div>
+          </div>
+          <button class="place-btn" onclick="placeBets()">LOG BETS</button>
+        </div>
+      </div>`;
+
+  return `<div class="anim">
+    <div class="rg-bar">
+      ⚠ Sports betting involves risk of financial loss. This tool provides analytical assistance only.
+      Never bet more than you can afford to lose.
+      <span class="rg-link">1-800-522-4700</span>
+    </div>
+    <div class="section-title">PENDING BET SLIP</div>
+    ${slipRows}
+    <div class="section-title" style="margin-top:16px">RECENT BETS</div>
+    <div class="section-card" style="padding:0;overflow:hidden">
+      ${[
+        {player:'Jalen Brunson',   team:'IND@NYK', dir:'OVER',  line:7.5, grade:'A', stake:20, status:'WON',  pnl:17.39, date:'2026-03-17'},
+        {player:'D. Garland',      team:'CLE@MIL', dir:'OVER',  line:7.5, grade:'A', stake:25, status:'WON',  pnl:21.74, date:'2026-03-17'},
+        {player:'LaMelo Ball',     team:'CHA@MIA', dir:'OVER',  line:8.5, grade:'B', stake:15, status:'LOST', pnl:-15.0, date:'2026-03-16'},
+        {player:'Chris Paul',      team:'PHX@OKC', dir:'OVER',  line:8.5, grade:'A', stake:30, status:'WON',  pnl:27.27, date:'2026-03-15'},
+      ].map(b => {
+        const sc = b.status==='WON' ? '#1B8A5A' : b.status==='LOST' ? '#C0392B' : '#7A6A52';
+        return `
+        <div class="hist-row" style="padding:10px 14px">
+          <div style="flex:1">
+            <div class="hist-player">${b.player}</div>
+            <div class="hist-meta">${b.dir} ${b.line} · Grade ${b.grade} · $${b.stake}</div>
+            <div class="hist-date">${b.date}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="status-badge" style="background:${sc}20;display:inline-block">
+              <span class="status-text" style="color:${sc}">${b.status}</span>
+            </div>
+            <div class="pnl-val" style="color:${b.pnl>=0?'#1B8A5A':'#C0392B'}">${fmtPnl(b.pnl)}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function renderAlgorithm() {
+  return `<div class="anim">
+    <div class="section-card">
+      <div class="section-title">MODEL ARCHITECTURE — 13 FACTORS</div>
+      ${FACTORS.map(f=>`
+      <div class="factor-row-algo">
+        <div class="fa-name">
+          <div class="fa-n">${f.n}</div>
+          <div class="fa-d">${f.d}</div>
+          <div class="fa-r">${f.r}</div>
+        </div>
+        <div>
+          <div class="fa-w">${f.w}</div>
+          ${f.wp > 0 ? `<div class="w-bar"><div class="w-fill" style="width:${f.wp}%"></div></div>` : ''}
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="section-card">
+      <div class="section-title">COVARIANCE MATRIX (1980–2026)</div>
+      ${[
+        ['PG AST ↔ Team AST%',    'r = 0.84', '#1B6CA8'],
+        ['PG AST ↔ Opp DefRtg',   'r = −0.72','#1B6CA8'],
+        ['PG AST ↔ Coach Pace',   'r = 0.68', '#4A90C4'],
+        ['PG TO  ↔ Opp Steal%',   'r = 0.61', '#4A90C4'],
+        ['Team AST ↔ OffRtg',     'r = 0.79', '#1B6CA8'],
+        ['PG AST ↔ Home Advantage','r = 0.52', '#8A7460'],
+      ].map(([lbl,r,c])=>`
+      <div class="cov-row">
+        <span style="font-size:11px;color:var(--text2)">${lbl}</span>
+        <span style="font-family:'Courier New',monospace;font-size:12px;font-weight:700;color:${c}">${r}</span>
+      </div>`).join('')}
+    </div>
+    <div class="section-card">
+      <div class="section-title">KELLY CRITERION — STAKE SIZING</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6;padding:4px 0">
+        <strong style="color:var(--blue)">Formula:</strong> f = (bp − q) / b<br>
+        where <em>b</em> = net odds, <em>p</em> = win probability, <em>q</em> = 1 − p<br><br>
+        <strong style="color:var(--blue)">Safeguards:</strong><br>
+        • Maximum fraction capped at 25% of bankroll<br>
+        • Hard floor: $5 per bet<br>
+        • Hard ceiling: $100 per bet<br>
+        • Daily exposure limit: $500<br>
+        • Grade A: ≥76% conf + ≥6% edge<br>
+        • Grade B: ≥70% conf + ≥4% edge
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderBacktest() {
+  const maxV = Math.max(...YEARS.map(y=>y.v));
+  return `<div class="anim">
+    <div class="bt-headline">
+      <div class="bt-big">88.6%</div>
+      <div class="bt-sub">Win Rate · 1,400 Grade A+B Bets · 2015–2025</div>
+      <div class="bt-row">
+        <span class="bt-stat">✓ 1,240 wins</span>
+        <span class="bt-stat" style="margin:0 8px">•</span>
+        <span class="bt-stat">+7.9% ROI</span>
+        <span class="bt-stat" style="margin:0 8px">•</span>
+        <span class="bt-stat">Sharpe 1.16</span>
+      </div>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-box"><div class="metric-lbl">GRADE A RATE</div><div class="metric-val" style="color:var(--blue)">91.0%</div><div style="font-size:10px;color:var(--text3)">1,039 bets</div></div>
+      <div class="metric-box"><div class="metric-lbl">GRADE B RATE</div><div class="metric-val" style="color:#4A90C4">81.7%</div><div style="font-size:10px;color:var(--text3)">361 bets</div></div>
+      <div class="metric-box"><div class="metric-lbl">BEST SYSTEM</div><div class="metric-val" style="color:var(--blue);font-size:18px">ZONE 23</div><div style="font-size:10px;color:var(--text3)">94.0% cover</div></div>
+      <div class="metric-box"><div class="metric-lbl">AVOID</div><div class="metric-val" style="color:var(--text3);font-size:14px">SWITCH ALL</div><div style="font-size:10px;color:var(--loss)">54% — coin flip</div></div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">YEAR-OVER-YEAR WIN RATE (2015–2025)</div>
+      <div class="bar-chart">
+        ${YEARS.map(y=>{
+          const h = Math.max(4, ((y.v - 70) / 25) * 100);
+          const c = y.v >= 88 ? '#1B6CA8' : y.v >= 85 ? '#4A90C4' : '#2FAE7A';
+          return `<div class="bar-item"><div class="bar-val">${y.v}%</div><div class="bar-body" style="height:${h}%;background:${c}"></div><div class="bar-lbl">${y.y}</div></div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+        <div style="width:18px;height:1px;background:#D4A017"></div>
+        <span style="font-size:9px;color:#D4A017">70% target floor</span>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">WIN RATE BY DEFENSIVE SYSTEM</div>
+      ${SYSTEMS.map(s=>`
+      <div class="sys-row">
+        <div style="flex:1">
+          <div class="sys-name">${s.sys.replace(/_/g,' ')}</div>
+          <div style="font-size:9px;color:var(--text3)">${s.bets} bets</div>
+        </div>
+        <div>
+          <div class="sys-pct" style="color:${s.color}">${s.pct}%</div>
+          <div class="mini-bar"><div class="mini-fill" style="width:${Math.max(0,(s.pct-50)/0.5)}%;background:${s.color}"></div></div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderPGData() {
+  return `<div class="anim">
+    <div class="section-card">
+      <div class="section-title">ALL-TIME PG BENCHMARKS (1980–2026)</div>
+      <div style="display:flex;gap:4px;padding-bottom:6px;border-bottom:1px solid var(--tan-d);margin-bottom:4px">
+        <span style="flex:2;font-size:8px;color:var(--text3)">Player</span>
+        <span style="flex:1;font-size:8px;color:var(--text3);text-align:right">AST</span>
+        <span style="flex:1;font-size:8px;color:var(--text3);text-align:right">vs Elite</span>
+        <span style="flex:1;font-size:8px;color:var(--text3);text-align:right">vs Poor</span>
+        <span style="flex:1;font-size:8px;color:var(--text3);text-align:right">TO</span>
+      </div>
+      ${PG_HISTORY.map(p=>`
+      <div class="hist-row">
+        <div style="flex:2"><div class="hist-player">${p.pg}</div><div class="hist-meta">${p.era}</div></div>
+        <div style="flex:1;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:var(--text)">${p.ast}</div>
+        <div style="flex:1;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:var(--text3)">${p.elite}</div>
+        <div style="flex:1;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:var(--blue);font-weight:700">${p.poor}</div>
+        <div style="flex:1;text-align:right;font-family:'Courier New',monospace;font-size:12px;color:var(--text3)">${p.to}</div>
+      </div>`).join('')}
+    </div>
+    <div class="section-card">
+      <div class="section-title">KEY HISTORICAL FINDINGS</div>
+      ${[
+        {t:'Pace Revolution (2015–2020)', b:"D'Antoni-influenced fast-pace drove PG assist floors up. League avg pace rose from 92 → 104 poss/game."},
+        {t:'Switch Everything Killed ASTs', b:'Post-2015 switch coverage reduced PG assists by 1.4/game vs pre-2015 baselines. Model adjusts per era.'},
+        {t:'TO-Steal Covariance', b:'Facing top-10 steal% opponent increases PG TOs by 22% AND reduces assist rate by 8% simultaneously.'},
+        {t:'Zone 23 Premium', b:'PGs vs zone-heavy defenses average 2.1 extra assists. Strongest system edge in the 45-year dataset.'},
+      ].map(k=>`
+      <div style="padding:9px 0;border-bottom:1px solid var(--tan-m)">
+        <div style="font-size:11px;font-family:Georgia;font-weight:700;color:var(--blue);margin-bottom:3px">◆ ${k.t}</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.5">${k.b}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderSettings() {
+  const sc = {idle:'#8A7460',scanning:'#1B6CA8',analyzing:'#1B6CA8',placing:'#2FAE7A',halted:'#D4A017',error:'#C0392B'};
+  const statusCol = sc[agentStatus] || '#8A7460';
+  return `<div class="anim">
+    <!-- Agent status card -->
+    <div class="status-card">
+      <div class="agent-status-row">
+        <div class="status-dot" style="background:${statusCol}"></div>
+        <span class="agent-status-text" style="color:${statusCol}">${agentStatus.toUpperCase()}</span>
+      </div>
+      <div class="agent-msg">${agentMsg}</div>
+      <div class="agent-btn-row">
+        <button class="agent-btn ${settings.agentEnabled ? 'disable' : 'enable'}"
+          onclick="toggleAgent()">
+          ${settings.agentEnabled ? 'DISABLE AGENT' : 'ENABLE AGENT'}
+        </button>
+        <button class="agent-btn scan" ${!settings.agentEnabled ? 'disabled style="opacity:0.5"' : ''}
+          onclick="runScan()">
+          RUN SCAN
+        </button>
+      </div>
+    </div>
+
+    <!-- Bankroll -->
+    <div class="section-title">BANKROLL</div>
+    <div class="section-card" style="padding:0;overflow:hidden">
+      <div class="setting-row">
+        <div style="flex:1">
+          <div class="setting-label">Starting Bankroll</div>
+          <div class="setting-hint">Used for Kelly stake sizing</div>
+        </div>
+        <div class="num-input-wrap">
+          <span class="num-prefix">$</span>
+          <input class="num-input" type="number" value="${settings.bankroll}" min="0" max="100000"
+            onchange="updateSetting('bankroll', this.value)" />
+        </div>
+      </div>
+      <div class="bankroll-row">
+        <div>
+          <div class="bankroll-lbl">CURRENT BALANCE</div>
+          <div class="bankroll-val">$${bankroll.toFixed(2)}</div>
+        </div>
+        <button class="reset-btn" onclick="resetBankroll()">RESET</button>
+      </div>
+    </div>
+
+    <!-- Risk limits -->
+    <div class="section-title">RISK LIMITS</div>
+    <div class="section-card" style="padding:0;overflow:hidden">
+      <div class="setting-row">
+        <div style="flex:1">
+          <div class="setting-label">Max Single Bet</div>
+          <div class="setting-hint">Hard cap per bet ($5–$100)</div>
+        </div>
+        <div class="num-input-wrap">
+          <span class="num-prefix">$</span>
+          <input class="num-input" type="number" value="${settings.maxSingleBet}" min="5" max="100"
+            onchange="updateSetting('maxSingleBet', this.value)" />
+        </div>
+      </div>
+      <div class="setting-row">
+        <div style="flex:1">
+          <div class="setting-label">Max Daily Exposure</div>
+          <div class="setting-hint">Stop placing bets after this $$ lost/staked</div>
+        </div>
+        <div class="num-input-wrap">
+          <span class="num-prefix">$</span>
+          <input class="num-input" type="number" value="${settings.maxDailyExposure}" min="0" max="500"
+            onchange="updateSetting('maxDailyExposure', this.value)" />
+        </div>
+      </div>
+      <div class="setting-row">
+        <div style="flex:1">
+          <div class="setting-label">Loss Limit (Responsible Gambling)</div>
+          <div class="setting-hint">Agent halts if daily loss exceeds this</div>
+        </div>
+        <div class="num-input-wrap">
+          <span class="num-prefix">$</span>
+          <input class="num-input" type="number" value="${settings.responsibleGamblingLimit}" min="0" max="500"
+            onchange="updateSetting('responsibleGamblingLimit', this.value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Algorithm thresholds -->
+    <div class="section-title">ALGORITHM THRESHOLDS</div>
+    <div class="section-card" style="padding:0;overflow:hidden">
+      <div class="setting-row">
+        <div style="flex:1">
+          <div class="setting-label">Min Win Probability</div>
+          <div class="setting-hint">Min 70% (hard limit)</div>
+        </div>
+        <div class="num-input-wrap">
+          <span class="num-prefix">%</span>
+          <input class="num-input" type="number" value="${settings.minConfidence}" min="70" max="95"
+            onchange="updateSetting('minConfidence', this.value)" />
+        </div>
+      </div>
+      <div class="setting-row">
+        <div style="flex:1">
+          <div class="setting-label">Min Edge</div>
+          <div class="setting-hint">Min 4% (Grade B threshold)</div>
+        </div>
+        <div class="num-input-wrap">
+          <span class="num-prefix">%</span>
+          <input class="num-input" type="number" value="${settings.minEdgePct}" min="2" max="20"
+            onchange="updateSetting('minEdgePct', this.value)" />
+        </div>
+      </div>
+      <div class="setting-row">
+        <div style="flex:1">
+          <div class="setting-label">Allowed Grades</div>
+          <div class="setting-hint">A = ≥76% conf ≥6% edge · B = ≥70% conf ≥4% edge</div>
+        </div>
+        <div class="grade-toggle-row">
+          ${['A','B'].map(g => {
+            const active = settings.gradesAllowed.includes(g);
+            return `<button class="grade-toggle${active?' active':''}" onclick="toggleGrade('${g}')">${'Grade '+g}</button>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Automation -->
+    <div class="section-title">AUTOMATION</div>
+    <div class="section-card" style="padding:0;overflow:hidden">
+      <div class="setting-row">
+        <div style="flex:1">
+          <div class="setting-label">Auto-Place Bets</div>
+          <div class="setting-hint">Requires DraftKings Operator API credentials. Use at your own risk. Auto-betting may violate DraftKings Terms of Service and may be illegal in your jurisdiction — consult local laws before use.</div>
+        </div>
+        <div class="toggle-track${settings.autoPlaceBets?' on':''}" onclick="toggleAutoPlace()">
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div style="flex:1">
+          <div class="setting-label">The Odds API Key</div>
+          <div class="setting-hint">Get free key at the-odds-api.com (500 req/month)</div>
+        </div>
+        <div class="num-input-wrap">
+          <input class="num-input" type="password" placeholder="Enter API key"
+            value="${settings.oddsApiKey}" style="min-width:100px"
+            onchange="updateSetting('oddsApiKey', this.value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="disclaimer">
+      <div class="disclaimer-title">RESPONSIBLE GAMBLING</div>
+      <div class="disclaimer-text">
+        This AI agent facilitates automated sports wagering analysis. Sports betting involves
+        risk of financial loss. The CourtIQ algorithm provides statistical predictions only —
+        no outcome is guaranteed.<br><br>
+        The agent will never:<br>
+        • Place bets exceeding your configured loss limits<br>
+        • Chase losses with increased stakes<br>
+        • Provide false reassurance on losing streaks<br><br>
+        National Problem Gambling Helpline:<br>
+        <span style="color:var(--blue);font-weight:700">1-800-522-4700</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+const RENDERERS = [
+  renderProps, renderMatchups, renderBetSlip, renderAlgorithm,
+  renderBacktest, renderPGData, renderSettings
+];
+
+/* ── Tab navigation ─────────────────────────────────────────────────────────── */
+function setTab(i) {
+  currentTab = i;
+  const tab = TABS[i];
+
+  // Update header
+  document.getElementById('hdr-title').textContent = tab.title;
+  document.getElementById('hdr-sub').textContent   = tab.sub;
+  const badge = document.getElementById('hdr-badge');
+  if (tab.badge) {
+    badge.textContent = tab.badge;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  // Update summary bar
+  document.getElementById('summary-bar').innerHTML = renderSummary(i);
+
+  // Update nav items
+  for (let j = 0; j < 7; j++) {
+    const icon = document.getElementById('ni'+j);
+    const lbl  = document.getElementById('nl'+j);
+    icon.className = 'nav-icon' + (j === i ? ' active' : '');
+    lbl.className  = 'nav-lbl'  + (j === i ? ' active' : '');
+  }
+
+  // Render content and scroll to top
+  const scrollEl = document.getElementById('content');
+  scrollEl.innerHTML = RENDERERS[i]();
+  scrollEl.scrollTop = 0;
+}
+
+/* ── Bet Slip interactions ──────────────────────────────────────────────────── */
+function removeBet(id) {
+  betSlip = betSlip.filter(b => b.id !== id);
+  if (currentTab === 2) setTab(2);
+}
+
+function updateStake(id, val) {
+  const stake = Math.min(100, Math.max(1, parseFloat(val) || 0));
+  betSlip = betSlip.map(b => b.id === id ? {...b, stake} : b);
+}
+
+function placeBets() {
+  if (betSlip.length === 0) return;
+  const total = betSlip.reduce((s,b)=>s+b.stake,0);
+  if (confirm(`Log ${betSlip.length} bet(s) totaling $${total.toFixed(2)} to your history?\n\nThis records the bets in your local history.`)) {
+    bankroll -= total;
+    betSlip = [];
+    if (currentTab === 2) setTab(2);
+    else setTab(2);
+  }
+}
+
+/* ── Settings interactions ──────────────────────────────────────────────────── */
+function toggleAgent() {
+  settings.agentEnabled = !settings.agentEnabled;
+  agentStatus = settings.agentEnabled ? 'idle' : 'idle';
+  agentMsg = settings.agentEnabled
+    ? 'Agent enabled. Ready to scan DraftKings for props.'
+    : 'Agent is disabled. Enable to start scanning DraftKings props.';
+  if (currentTab === 6) setTab(6);
+}
+
+function runScan() {
+  if (!settings.agentEnabled) return;
+  agentStatus = 'scanning';
+  agentMsg    = 'Scanning DraftKings API for NBA PG props…';
+  if (currentTab === 6) setTab(6);
+  setTimeout(() => {
+    agentStatus = 'analyzing';
+    agentMsg    = 'Analyzing 12 props with 13-factor Bayesian model…';
+    if (currentTab === 6) setTab(6);
+    setTimeout(() => {
+      agentStatus = 'idle';
+      agentMsg    = 'Scan complete. Found 6 qualifying props (4 Grade A, 2 Grade B).';
+      if (currentTab === 6) setTab(6);
+    }, 2000);
+  }, 1500);
+}
+
+function updateSetting(key, val) {
+  const n = parseFloat(val);
+  if (!isNaN(n)) settings[key] = n;
+  else settings[key] = val;
+}
+
+function toggleAutoPlace() {
+  if (!settings.autoPlaceBets) {
+    if (confirm('Enable Auto-Betting? (Preview Only)\n\nNOTE: This is a browser preview — no real bets are placed here. In the real Android app, enabling this would automatically place real bets on DraftKings using your credentials.\n\nAuto-betting may violate DraftKings Terms of Service and may be illegal in certain jurisdictions.\n\nNational Problem Gambling Helpline: 1-800-522-4700')) {
+      settings.autoPlaceBets = true;
+      if (currentTab === 6) setTab(6);
+    }
+  } else {
+    settings.autoPlaceBets = false;
+    if (currentTab === 6) setTab(6);
+  }
+}
+
+function toggleGrade(g) {
+  const arr = settings.gradesAllowed.split(',').filter(Boolean);
+  const next = arr.includes(g) ? arr.filter(x => x !== g) : [...arr, g];
+  if (next.length === 0) return;
+  settings.gradesAllowed = next.join(',');
+  if (currentTab === 6) setTab(6);
+}
+
+function resetBankroll() {
+  if (confirm(`Reset bankroll to $${settings.bankroll}?`)) {
+    bankroll = settings.bankroll;
+    if (currentTab === 6) setTab(6);
+  }
+}
+
+/* ── Init ────────────────────────────────────────────────────────────────────── */
+setTab(0);
+</script>
+</body>
+</html>

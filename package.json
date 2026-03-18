@@ -7,6 +7,7 @@
   "scripts": {
     "android":    "react-native run-android",
     "start":      "react-native start",
+    "web":        "npx serve web",
     "test":       "jest --forceExit",
     "lint":       "eslint src --ext .ts,.tsx",
     "backtest":   "ts-node scripts/runBacktest.ts",
