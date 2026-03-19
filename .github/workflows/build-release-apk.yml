@@ -40,12 +40,6 @@ jobs:
         with:
           gradle-version: wrapper
 
-      - name: Download Gradle wrapper jar
-        run: |
-          curl -fsSL \
-            "https://github.com/gradle/gradle/raw/v8.8.0/gradle/wrapper/gradle-wrapper.jar" \
-            -o android/gradle/wrapper/gradle-wrapper.jar
-
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
@@ -89,10 +83,10 @@ jobs:
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res
 
-      - name: Assemble release APK
+      - name: Assemble sideloadRelease APK
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleSideloadRelease --no-daemon
 
       - name: Locate APK
         run: |
@@ -102,7 +96,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CourtIQ-release-apk
-          path: android/app/build/outputs/apk/release/
+          name: CourtIQ-debug-sideload-apk
+          path: android/app/build/outputs/apk/sideloadRelease/
           if-no-files-found: error
           retention-days: 30
