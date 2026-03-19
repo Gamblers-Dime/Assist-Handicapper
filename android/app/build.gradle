@@ -15,12 +15,6 @@ android {
     }
 
     signingConfigs {
-        debug {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
-        }
         release {
             // Populated from gradle.properties or environment variables.
             // See android/gradle.properties for property names and
@@ -36,7 +30,6 @@ android {
 
     buildTypes {
         debug {
-            signingConfig signingConfigs.debug
         }
         release {
             minifyEnabled true
@@ -44,9 +37,14 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
                 signingConfig signingConfigs.release
-            } else {
-                signingConfig signingConfigs.debug
             }
+        }
+        sideloadRelease {
+            initWith(release)
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+            matchingFallbacks = ["release"]
         }
     }
 
