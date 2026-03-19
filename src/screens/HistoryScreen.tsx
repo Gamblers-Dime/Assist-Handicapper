@@ -74,4 +74,3 @@ const hStyles = StyleSheet.create({
   insightBody: { fontSize:11, color: Colors.textSecondary, lineHeight:16 },
 });
 
-export default HistoryScreen;

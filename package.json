@@ -45,15 +45,14 @@
   },
   "jest": {
     "preset":          "react-native",
-    "testPathPattern": "__tests__",
+    "testMatch": ["**/__tests__/**/*.ts?(x)"],
     "transform": {
       "^.+\\.(ts|tsx)$": "babel-jest"
     },
     "transformIgnorePatterns": [
       "node_modules/(?!(react-native|@react-native|@react-navigation|react-redux|@reduxjs)/)"
     ],
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json"],
-    "setupFilesAfterFramework": []
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json"]
   },
   "engines": {
     "node": ">=18"
